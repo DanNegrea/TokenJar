@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Tokenjar : Burp Suite extension. Useful for managing tokens like anti-CSRF, CSurf, Session values. Can be used to set params that require random numbers or params that are computed based on special forumla.">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Tokenjar</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/DanNegrea/TokenJar">View on GitHub</a>
+
+          <h1 id="project_title">Tokenjar</h1>
+          <h2 id="project_tagline">Burp Suite extension. Useful for managing tokens like anti-CSRF, CSurf, Session values. Can be used to set params that require random numbers or params that are computed based on special forumla.</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/DanNegrea/TokenJar/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/DanNegrea/TokenJar/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h2>
+<a id="welcome-to-tokenjar-page" class="anchor" href="#welcome-to-tokenjar-page" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Welcome to TokenJar Page.</h2>
+
+<p>If you’re using Burp Suite Free or Pro you have already noticed that sometimes maintaining a session can be a difficult task.
+This extension is the easiest way to manage tokens used for different purposes. Examples include: anti-CSRF, CSurf value, parameters that require a unique/random value and even Session values that are computed based on a formula.</p>
+
+<p>TokenJar was designed to do overcome the limitations of build-in Cookie Jar. It proves very useful when working together with Session Handling Rules.</p>
+
+<h2>
+<a id="download-the-plugin" class="anchor" href="#download-the-plugin" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Download the plugin</h2>
+
+<p>The ready to use jar can be downloaded from <a href="https://github.com/DanNegrea/TokenJar/releases/download/1.0/TokenJar_1.0.jar">here</a></p>
+
+<p>Go ahead and improve this extension. You can browse through the code <a href="https://github.com/DanNegrea/TokenJar">here</a>.</p>
+
+<h2>
+<a id="install-instructions" class="anchor" href="#install-instructions" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Install instructions</h2>
+
+<ol>
+<li>Download the jar.</li>
+<li>In Burp navigate to the Extender tab.</li>
+<li>Select "Add" </li>
+<li>Extension Type should be set to "Java" and choose "Select file…".</li>
+<li>Navigate to the downloaded jar and click "Open" and "Next".</li>
+</ol>
+
+<p>If everything is OK, the extension should appear in the list and the "Loaded" checkbox should be checked. </p>
+
+<h2>
+<a id="getting-started" class="anchor" href="#getting-started" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Getting Started</h2>
+
+<p>The plugin has it's own Tab called "Token Jar" with a user interface designed around a table that will show you all the information needed.</p>
+
+<ol>
+<li>Add a new line</li>
+<li>Provide the name of the parameter and where it is located: url, body, cookie, other (can be one or more)</li>
+<li>Leave the value empty, this will be updated by the plugin.</li>
+<li>Think about how the value will be calculated. The default formula is to use the first matching group from Regex. Here you can use javascript to concatenate, generate random values, do conversions, etc. </li>
+<li>Define the regular expression used to extract relevant values from server responses. You can extract one or more groups. </li>
+<li>Test your regular expression by clicking "Regex". Once done save and close the window.</li>
+<li>Enable the line and the master enable checkbox. </li>
+<li>Test it.</li>
+</ol>
+
+<h3>
+<a id="example" class="anchor" href="#example" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Example</h3>
+
+<ol>
+<li>I added a new line with the scope of extracting the anti-CSRF value from a hidden input. 
+<img src="1" alt="">
+</li>
+<li>I tested the Regex and the Eval. To do this I used a response snippet.
+<img src="2" alt="">
+</li>
+<li>Enable the line and the master switch 
+<img src="3" alt="">
+</li>
+<li>Test it and see if I Value get's updated
+<img src="4" alt="">
+</li>
+</ol>
+
+<h2>
+<a id="notes" class="anchor" href="#notes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Notes</h2>
+
+<ul>
+<li>Master enable will be unchecked when Burp restarts</li>
+<li>State should be preserved after restart, nevertheless, you can save and load the configuration later using the bottom-right bottoms</li>
+</ul>
+
+<h2>
+<a id="requirements-for-usage" class="anchor" href="#requirements-for-usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Requirements for usage</h2>
+
+<ul>
+<li>Burp Suite Free or Pro</li>
+<li>JRE or JDK 1.8</li>
+</ul>
+
+<h3>
+<a id="requirements-for-building" class="anchor" href="#requirements-for-building" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Requirements for building</h3>
+
+<ul>
+<li>Google Guava 18.0+</li>
+</ul>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Tokenjar maintained by <a href="https://github.com/DanNegrea">DanNegrea</a></p>
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
