@@ -6,6 +6,6 @@ SerialVersion: 0
 MinPlatformVersion: 0
 ProOnly: False
 Author: Dan Negrea
-ShortDescription: Useful for managing tokens like anti-CSRF, CSurf, Session values. Can be used to set params that require random numbers or params that are computed based on application response
+ShortDescription: Manages tokens and updates request parameters with current values.
 EntryPoint: build/libs/token-jar-all.jar
 BuildCommand: gradle -PburpJar=$BURP_JAR fatJar
