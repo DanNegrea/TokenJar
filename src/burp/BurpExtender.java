@@ -221,16 +221,28 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
         boolean oContLenProccess = false;
                 
         for(int i=0; i<HTTP_headers.size(); i++){
-            //*DEBUG*/callbacks.printOutput("+++"+HTTP_headers.get(i));
-            if ( HTTP_headers.get(i).contains("Content-Length:")) {
+            
+            if (dataModel.getMasterDebug()) {callbacks.printOutput("Header["+i+"]="+HTTP_headers.get(i));} /*Debug enabled*/
+            
+            if ( HTTP_headers.get(i).startsWith("Content-Length:")) {
                 String Content_Length = HTTP_headers.get(i);
-                oContLenStart = Bytes.indexOf(oRequest, Content_Length.getBytes());
-                oContLenLength = Content_Length.length();
-                oContLenValue = Integer.parseInt(Content_Length.substring("Content-Length:".length()).trim());                
-                //*DEBUG*/callbacks.printOutput("###oContLenStart="+oContLenStart+", oContLenLength="+oContLenLength+", oContLenValue="+oContLenValue);       
+                try {                    
+                    oContLenStart = Bytes.indexOf(oRequest, Content_Length.getBytes());
+                    oContLenLength = Content_Length.length();
+                    oContLenValue = Integer.parseInt(Content_Length.substring("Content-Length:".length()).trim());                
+                    //*DEBUG*/callbacks.printOutput("###oContLenStart="+oContLenStart+", oContLenLength="+oContLenLength+", oContLenValue="+oContLenValue);       
                 
-                oContLenProccess = true;
-                break;
+                    oContLenProccess = true;
+                    break;
+                }
+                catch (NumberFormatException e){
+                    // do nothing, let the for search for another "Content-Length" header
+                    // if none was found the oContLenProccess shold be false
+                    if (dataModel.getMasterDebug()){  /*Debug enabled*/
+                        callbacks.printOutput("[Exception] NumberFormatException when converting "+Content_Length );
+                        callbacks.printOutput("[.........] skip updating this 'Content-Length' header ");
+                    }
+                }
             }
         }
         //end Content-Length preparation
