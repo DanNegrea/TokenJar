@@ -9,6 +9,7 @@ hs_err_pid*
 #ant specific
 dist/
 build/
+test/
 build.xml
  
 #netbeans specific

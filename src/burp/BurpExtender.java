@@ -180,7 +180,12 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
         //2. Calculate Content-Length delta length 
         for (IParameter parameter : oParameters) {
             //*DEBUG*/callbacks.printOutput("processRequestMessage() 2 parameter.getName="+parameter.getName());
+            //*DEBUG*/callbacks.printOutput("parameter name="+parameter.getName() + ", value="+parameter.getValue() + ", type="+parameter.getType());
+            // the parameter type must be between 0 and 3
             byte parameterType = parameter.getType();
+            if (parameterType>3)
+                parameterType = 3;
+            
             if ( (id = dataModel.getByName(parameter.getName(), parameterType))!=null ) {
                 String newValue = dataModel.getValue(id);
                 
@@ -192,10 +197,7 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
                 
                 //Update Content-Length only for certain parameters                
                 if ( parameterType == IParameter.PARAM_BODY || 
-                        parameterType == IParameter.PARAM_JSON || 
-                        parameterType == IParameter.PARAM_MULTIPART_ATTR ||  
-                        parameterType == IParameter.PARAM_XML || 
-                        parameterType == IParameter.PARAM_XML_ATTR )
+                        parameterType >= 3 ) /*other parameter type*/
                     deltaLenthContent += delta;
             }
         }
@@ -279,20 +281,27 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
             nStart+= delta;
             
             //DEBUG enabled
-            if (dataModel.getMasterDebug() && dataModel.getDebug(dataModel.getByName(parameter.IParam.getName(), parameter.IParam.getType()))){
-                if (debugPrintOnce){
-                    callbacks.printOutput("");
-                    callbacks.printOutput(">>> Processing Request Message");
-                    callbacks.printOutput("> Path=" + requestInfo.getUrl().getPath());
-                    if (HTTP_message.getComment()==null) HTTP_message.setComment("");
-                    HTTP_message.setComment( HTTP_message.getComment() + " Tokens IN ");
-                    debugPrintOnce = false;
-                }                
-                callbacks.printOutput("> Updating "+parameter.IParam.getName()+" of type "+ paramType[parameter.IParam.getType()]);
-                callbacks.printOutput("> Old possition start="+oStart );
-                callbacks.printOutput("> New possition start="+nStart );
-                callbacks.printOutput("> New value="+parameter.newvalue);
-                HTTP_message.setComment( HTTP_message.getComment() + parameter.IParam.getName()+" ");
+            if (dataModel.getMasterDebug()){
+                // the parameter type must be between 0 and 3
+                byte parameterType = parameter.IParam.getType();
+                if (parameterType>3)
+                    parameterType = 3;
+                
+                if(dataModel.getDebug(dataModel.getByName(parameter.IParam.getName(), parameterType))){
+                    if (debugPrintOnce){
+                        callbacks.printOutput("");
+                        callbacks.printOutput(">>> Processing Request Message");
+                        callbacks.printOutput("> Path=" + requestInfo.getUrl().getPath());
+                        if (HTTP_message.getComment()==null) HTTP_message.setComment("");
+                        HTTP_message.setComment( HTTP_message.getComment() + " Tokens IN ");
+                        debugPrintOnce = false;
+                    }                
+                    callbacks.printOutput("> Updating "+parameter.IParam.getName()+" of type "+ paramType[parameterType]);
+                    callbacks.printOutput("> Old possition start="+oStart );
+                    callbacks.printOutput("> New possition start="+nStart );
+                    callbacks.printOutput("> New value="+parameter.newvalue);
+                    HTTP_message.setComment( HTTP_message.getComment() + parameter.IParam.getName()+" ");
+                }
             }
             //end DEBUG
 
