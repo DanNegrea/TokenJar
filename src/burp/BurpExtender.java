@@ -85,65 +85,56 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
     // Response message
     */
     private void processResponseMessage(IHttpRequestResponse HTTP_message) 
-    {
+    {        
         try{
-        //*DEBUG*/ callbacks.printOutput("processResponseMessage()");
-        boolean debugPrintOnce = true;
-        boolean matcherFound = false;
         
         //Obtaining path
     	IRequestInfo requestInfo = helpers.analyzeRequest(HTTP_message);
     	String path = requestInfo.getUrl().getPath();
         
+        //Debug enabled
+        if (dataModel.getMasterDebug()){
+            callbacks.printOutput("");
+            callbacks.printOutput("<<< Processing Response Message");
+            callbacks.printOutput(". Path=" + path);
+            if (HTTP_message.getComment()==null)
+                HTTP_message.setComment("Tokenjar:");
+        }
+        
         String HTTP_response = null;
-        
+        //get all ids for token that 'listen' for this response
         Set<Integer> ids = dataModel.getByPath( path );
-        
-        //*DEBUG*/ callbacks.printOutput("1 path = "+ path);
-        //*DEBUG*/ callbacks.printOutput("2 ids.size() = "+ ids.size());
-        
+                
         for(Integer id: ids){                     
             //Get only the first time the response
             if (HTTP_response==null) HTTP_response = new String(HTTP_message.getResponse());
             String value = null;
             
             Matcher matcher = dataModel.getPattern(id).matcher( HTTP_response );
-            int grpCount = matcher.groupCount()+1;
+            int grpCount = matcher.groupCount()+1;   
             
-            //*DEBUG*/ callbacks.printOutput("3 grpCount= "+ grpCount);
-            if (matcher.find()) { //do I need to test for && grpCount >=0 ?
+            if (matcher.find()) { //do I need to test for && grpCount >=0 ?                
+                   /*Debug enabled*/
+                    if (dataModel.getMasterDebug() && dataModel.getDebug(id)) {
+                        HTTP_message.setComment( HTTP_message.getComment() + " match:"+dataModel.getName(id));                        
+                        callbacks.printOutput(". Match for "+dataModel.getName(id)+" (rule "+id+") for Regex=" + dataModel.getRegex(id));                   
+                    }
                     String[] grpValues = new String[grpCount];
                     
                     for (int i=0; i<grpCount; i++){
-                        grpValues[i]= matcher.group(i);
-                        //*DEBUG*/ callbacks.printOutput("4 grpValues["+i+"]="+ grpValues[i]);
+                        grpValues[i]= matcher.group(i);                        
+                        /*Debug enabled*/
+                        if (dataModel.getMasterDebug() && dataModel.getDebug(id)){ 
+                            callbacks.printOutput("+ grp["+i+"]="+ grpValues[i]);
+                        }
                     }                    
                     dataModel.setValue(id, grpValues);
-                    
-                    matcherFound = true;
-            }
-            
-            //DEBUG enabled
-            if (dataModel.getMasterDebug() && dataModel.getDebug(id)){
-                if (debugPrintOnce){
-                    callbacks.printOutput("");
-                    callbacks.printOutput("<<< Processing Response Message");
-                    callbacks.printOutput("< Path=" + path);
-                    
-                    if (HTTP_message.getComment()==null) HTTP_message.setComment("");
-                    
-                    if (matcherFound)                        
-                        HTTP_message.setComment( HTTP_message.getComment() + " Tokens OUT ");
-                    debugPrintOnce = false;
-                }
-                if (matcherFound) {
-                    HTTP_message.setComment( HTTP_message.getComment() + dataModel.getName(id)+" ");
-                    callbacks.printOutput("< Match for "+dataModel.getName(id)+"("+id+"), regex=" + dataModel.getRegex(id));                   
-                }
-                else
+            } 
+            else 
+                /*Debug enabled*/
+                if (dataModel.getMasterDebug() && dataModel.getDebug(id)){ 
                     callbacks.printOutput("< No match for "+dataModel.getName(id)+"("+id+"), regex=" + dataModel.getRegex(id));
-            }
-            //end DEBUG
+                }
         }
         }catch (Exception ex){
             callbacks.printError("ERR2");
@@ -155,14 +146,6 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
     // Request message
     */
     private void processRequestMessage(IHttpRequestResponse HTTP_message){
-        class enhancedParameter{
-            public enhancedParameter(IParameter IParam, String newValue){
-                this.IParam = IParam;
-                this.newvalue = newValue;
-            }
-            public IParameter IParam;
-            public String newvalue;
-        }
         
     	IRequestInfo requestInfo = helpers.analyzeRequest(HTTP_message);
     	byte[] oRequest = HTTP_message.getRequest();
@@ -176,11 +159,20 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
         int deltaLenthContent=0; 
         int delta; //work variable
         
+        //Debug enabled
+        if (dataModel.getMasterDebug()){
+                callbacks.printOutput("");
+                callbacks.printOutput(">>> Processing Request Message");
+                callbacks.printOutput(". Path=" + requestInfo.getUrl().getPath());
+                if (HTTP_message.getComment()==null)
+                    HTTP_message.setComment("Tokenjar:");
+        }
+        
         //1. Identify all params that are also in the table
         //2. Calculate Content-Length delta length 
         for (IParameter parameter : oParameters) {
-            //*DEBUG*/callbacks.printOutput("processRequestMessage() 2 parameter.getName="+parameter.getName());
-            //*DEBUG*/callbacks.printOutput("parameter name="+parameter.getName() + ", value="+parameter.getValue() + ", type="+parameter.getType());
+            if (dataModel.getMasterDebug()) {callbacks.printOutput(". Parameter["+parameter.getName()+"]="+parameter.getValue()+" of Type="+enhancedParameter.type.get(parameter.getType()));} /*Debug enabled*/
+            
             // the parameter type must be between 0 and 3
             byte parameterType = parameter.getType();
             if (parameterType>3)
@@ -188,30 +180,20 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
             
             if ( (id = dataModel.getByName(parameter.getName(), parameterType))!=null ) {
                 String newValue = dataModel.getValue(id);
-                
-                //*DEBUG*/callbacks.printOutput("processRequestMessage() 3 id= "+id);
                             
                 nParameters.add(new enhancedParameter(parameter, newValue));
                 delta = newValue.length() - (parameter.getValueEnd() - parameter.getValueStart());
                 deltaLenthReq += delta;
                 
-                //Update Content-Length only for certain parameters                
+                //Update Content-Length only for body parameters
                 if ( parameterType == IParameter.PARAM_BODY || 
                         parameterType >= 3 ) /*other parameter type*/
                     deltaLenthContent += delta;
             }
-        }
-        
-        //*DEBUG*/callbacks.printOutput("processRequestMessage() 4");
-        
+        }        
         //EXIT if no parameter was found
         if (nParameters.isEmpty()){
-            if (dataModel.getMasterDebug()){
-                callbacks.printOutput("");
-                callbacks.printOutput(">>> Processing Request Message");
-                callbacks.printOutput("> Path=" + requestInfo.getUrl().getPath());
-                callbacks.printOutput("> No parameters to update");
-            }
+            if (dataModel.getMasterDebug()){callbacks.printOutput("= No parameters to update");}; //Debug enabled
             return;
         }
         
@@ -222,7 +204,7 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
                 
         for(int i=0; i<HTTP_headers.size(); i++){
             
-            if (dataModel.getMasterDebug()) {callbacks.printOutput("Header["+i+"]="+HTTP_headers.get(i));} /*Debug enabled*/
+            if (dataModel.getMasterDebug()) {callbacks.printOutput(". Header["+i+"]="+HTTP_headers.get(i));} /*Debug enabled*/
             
             if ( HTTP_headers.get(i).startsWith("Content-Length:")) {
                 String Content_Length = HTTP_headers.get(i);
@@ -239,8 +221,8 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
                     // do nothing, let the for search for another "Content-Length" header
                     // if none was found the oContLenProccess shold be false
                     if (dataModel.getMasterDebug()){  /*Debug enabled*/
-                        callbacks.printOutput("[Exception] NumberFormatException when converting "+Content_Length );
-                        callbacks.printOutput("[.........] skip updating this 'Content-Length' header ");
+                        callbacks.printOutput("! NumberFormatException when converting "+Content_Length );
+                        callbacks.printOutput("! skipped updating this header ");
                     }
                 }
             }
@@ -253,10 +235,7 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
         int oEnd = oRequest.length;
         int nStart = 0;
         int oParamStart, oParamEnd;
-        //*DEBUG*/callbacks.printOutput("processRequestMessage() 5");
-        //debug useful
-        boolean debugPrintOnce = true;        
-        String[] paramType = {"PARAM_URL", "PARAM_BODY", "PARAM_COOKIE", "PARAM_JSON", "PARAM_MULTIPART_ATTR", "PARAM_XML", "PARAM_XML_ATTR"};
+             
         //1. Update all parameters identified above
         //2. Update the Content-Length
         for (enhancedParameter parameter : nParameters) {             
@@ -275,6 +254,9 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
                 
                 //Compute and append the new Content-Length
                 String nContLen = "Content-Length: "+ ((int) oContLenValue + (int) deltaLenthContent);
+                
+                if (dataModel.getMasterDebug()) {callbacks.printOutput("+ Content-Length="+ ((int) oContLenValue + (int) deltaLenthContent));} /*Debug enabled*/
+                
                 int nContLenLength = nContLen.length();
                 System.arraycopy(nContLen.getBytes(), 0, nRequest, nStart, nContLenLength);
                 //*DEBUG*/callbacks.printOutput("###nStart="+nStart+", nContLenLength="+nContLenLength);       
@@ -299,20 +281,9 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
                 if (parameterType>3)
                     parameterType = 3;
                 
-                if(dataModel.getDebug(dataModel.getByName(parameter.IParam.getName(), parameterType))){
-                    if (debugPrintOnce){
-                        callbacks.printOutput("");
-                        callbacks.printOutput(">>> Processing Request Message");
-                        callbacks.printOutput("> Path=" + requestInfo.getUrl().getPath());
-                        if (HTTP_message.getComment()==null) HTTP_message.setComment("");
-                        HTTP_message.setComment( HTTP_message.getComment() + " Tokens IN ");
-                        debugPrintOnce = false;
-                    }                
-                    callbacks.printOutput("> Updating "+parameter.IParam.getName()+" of type "+ paramType[parameterType]);
-                    callbacks.printOutput("> Old possition start="+oStart );
-                    callbacks.printOutput("> New possition start="+nStart );
-                    callbacks.printOutput("> New value="+parameter.newvalue);
-                    HTTP_message.setComment( HTTP_message.getComment() + parameter.IParam.getName()+" ");
+                if(dataModel.getDebug(dataModel.getByName(parameter.IParam.getName(), parameterType))){            
+                    callbacks.printOutput("+ Parameter["+parameter.IParam.getName()+"]="+parameter.newvalue+" of Type="+ enhancedParameter.type.get(parameterType));
+                    HTTP_message.setComment( HTTP_message.getComment() + " new:" + parameter.IParam.getName()+" ");
                 }
             }
             //end DEBUG
@@ -334,7 +305,7 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
                 System.arraycopy(oRequest, oStart, nRequest, nStart, oEnd-oStart); 
 
             }catch (Exception ex){
-                callbacks.printError("processRequestMessage() arraycopy, path=" + requestInfo.getUrl().getPath() + ", oStart=" + oStart + ", nStart=" + nStart );
+                callbacks.printOutput("! arraycopy exception on path=" + requestInfo.getUrl().getPath() + ", oStart=" + oStart + ", nStart=" + nStart );                
                 PrintWriter stderr = new PrintWriter(callbacks.getStderr());
                 ex.printStackTrace(stderr);
             }
@@ -343,4 +314,25 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
         //Send the new request 
         HTTP_message.setRequest(nRequest);
     } 
+}
+
+class enhancedParameter{
+    public static List<String> type;
+    static {        
+        type = new ArrayList(7);
+        type.add(IParameter.PARAM_URL, "url");
+        type.add(IParameter.PARAM_BODY, "body");
+        type.add(IParameter.PARAM_COOKIE, "cookie");
+        type.add(IParameter.PARAM_XML, "xml");
+        type.add(IParameter.PARAM_XML_ATTR, "xml attr");
+        type.add(IParameter.PARAM_MULTIPART_ATTR, "multipart attr");
+        type.add(IParameter.PARAM_JSON, "json");
+    }
+
+    public enhancedParameter(IParameter IParam, String newValue){
+        this.IParam = IParam;
+        this.newvalue = newValue;
+    }
+    public IParameter IParam;
+    public String newvalue;
 }
