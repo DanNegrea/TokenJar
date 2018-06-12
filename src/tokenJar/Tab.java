@@ -49,7 +49,7 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
         
         tableModel = (DefaultTableModel) tokenTable.getModel();        
         dataModel = new DataModel(tableModel, callbacks);
-        
+       
         //Restore table or put demo data
         this.restoreTableData(persistSettings.restore());       
         this.setStatusColor();
@@ -59,6 +59,8 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
         //(re)Initialize dataModel
         dataModel.init();
 
+        tokenTable.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
+        
         tableModel.addTableModelListener(this);
     }
     
@@ -109,9 +111,9 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
         }
         
         //Any change triggers unchecking of Master Enable
-        masterEnable.setSelected(false);
-        dataModel.setMasterEnable(false);
-        this.setStatusColor();
+        //masterEnable.setSelected(false);
+        //dataModel.setMasterEnable(false);
+        //this.setStatusColor();
                 
         // Replacing Save button functionality with unchecking Enable
         /*
