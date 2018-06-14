@@ -32,6 +32,9 @@ public class DataModel {
     private Pattern[] patterns; //precompile the patterns for performance
     
     private boolean masterEnable = false;
+    private boolean masterProxy = true;
+    private boolean masterIntruder = true;
+    private boolean masterRepeater = true;    
     private boolean masterDebug = false;
     
     private IBurpExtenderCallbacks callbacks;
@@ -175,7 +178,7 @@ public class DataModel {
         return patterns[rowId];
     }
     
-    public boolean getDebug(int rowId) {
+    public boolean getProxy(int rowId) {
         return (boolean) tableModel.getValueAt(rowId, 10);
     }
     
@@ -203,15 +206,36 @@ public class DataModel {
     
     public void setMasterEnable(boolean value){
         masterEnable = value;
-    }
+    }    
     
     public boolean getMasterEnable(){
         return masterEnable;
     }
+
+    public void setMasterProxy(boolean value){
+        masterProxy = value;
+    }    
+    public boolean getMasterProxy(){
+        return masterProxy;
+    }
+    
+    public void setMasterIntruder(boolean value){
+        masterIntruder = value;
+    }    
+    public boolean getMasterIntruder(){
+        return masterIntruder;
+    }
+    
+    public void setMasterRepeater(boolean value){
+        masterRepeater = value;
+    }    
+    public boolean getMasterRepeater(){
+        return masterRepeater;
+    }
     
     public void setMasterDebug(boolean value){
         masterDebug = value;
-    }
+    }    
     
     public boolean getMasterDebug(){
         return masterDebug;

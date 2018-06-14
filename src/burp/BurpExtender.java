@@ -51,6 +51,8 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
         //EXIT if Master Enable button is disabled
         if (dataModel.getMasterEnable()==false)
             return;
+        if (dataModel.getMasterProxy()==false)
+            return;
         
     	IHttpRequestResponse OLD_message = message.getMessageInfo();
     	if (isRequest) {
@@ -72,6 +74,10 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
         
         //EXIT if Master Enable button is disabled
         if (dataModel.getMasterEnable()==false)
+            return;
+        if (dataModel.getMasterIntruder()==false && toolFlag == IBurpExtenderCallbacks.TOOL_INTRUDER)
+            return;
+        if (dataModel.getMasterRepeater()==false && toolFlag == IBurpExtenderCallbacks.TOOL_REPEATER)
             return;
        
     	if (isRequest){
@@ -115,7 +121,7 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
             
             if (matcher.find()) { //do I need to test for && grpCount >=0 ?                
                    /*Debug enabled*/
-                    if (dataModel.getMasterDebug() && dataModel.getDebug(id)) {
+                    if (dataModel.getMasterDebug()) {
                         HTTP_message.setComment( HTTP_message.getComment() + " match:"+dataModel.getName(id));                        
                         callbacks.printOutput(". Match for "+dataModel.getName(id)+" (rule "+id+") for Regex=" + dataModel.getRegex(id));                   
                     }
@@ -124,7 +130,7 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
                     for (int i=0; i<grpCount; i++){
                         grpValues[i]= matcher.group(i);                        
                         /*Debug enabled*/
-                        if (dataModel.getMasterDebug() && dataModel.getDebug(id)){ 
+                        if (dataModel.getMasterDebug()){ 
                             callbacks.printOutput("+ grp["+i+"]="+ grpValues[i]);
                         }
                     }                    
@@ -132,7 +138,7 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
             } 
             else 
                 /*Debug enabled*/
-                if (dataModel.getMasterDebug() && dataModel.getDebug(id)){ 
+                if (dataModel.getMasterDebug()){ 
                     callbacks.printOutput("< No match for "+dataModel.getName(id)+"("+id+"), regex=" + dataModel.getRegex(id));
                 }
         }
@@ -280,11 +286,9 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
                 byte parameterType = parameter.IParam.getType();
                 if (parameterType>3)
                     parameterType = 3;
-                
-                if(dataModel.getDebug(dataModel.getByName(parameter.IParam.getName(), parameterType))){            
-                    callbacks.printOutput("+ Parameter["+parameter.IParam.getName()+"]="+parameter.newvalue+" of Type="+ enhancedParameter.type.get(parameterType));
-                    HTTP_message.setComment( HTTP_message.getComment() + " new:" + parameter.IParam.getName()+" ");
-                }
+                           
+                callbacks.printOutput("+ Parameter["+parameter.IParam.getName()+"]="+parameter.newvalue+" of Type="+ enhancedParameter.type.get(parameterType));
+                HTTP_message.setComment( HTTP_message.getComment() + " new:" + parameter.IParam.getName()+" ");                
             }
             //end DEBUG
 
