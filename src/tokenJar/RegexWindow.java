@@ -115,6 +115,7 @@ public class RegexWindow extends javax.swing.JFrame {
 
         jLabel3.setText("Name");
 
+        nameField.setEditable(false);
         nameField.setBackground(new java.awt.Color(239, 239, 239));
 
         jLabel4.setText("Path");

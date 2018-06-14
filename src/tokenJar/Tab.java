@@ -25,6 +25,7 @@ import javax.swing.JFileChooser;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 
 
 /**
@@ -365,15 +366,25 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
     private void removeTokenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeTokenActionPerformed
         int dialogButton = JOptionPane.YES_NO_OPTION;
         int dialogResult = JOptionPane.showConfirmDialog(this, "Are you sure you want to remove the selected line(s)?", "Warning", dialogButton);
-        if(dialogResult == 0) { /*0 > Yes   1 > No */            
-            int[] selectedRows = tokenTable.getSelectedRows();
-            for (int i = 0; i < selectedRows.length; i++)
-                tableModel.removeRow(selectedRows[i] - i);
+        if(dialogResult == 0) { /*0 > Yes   1 > No */  
+            // BUG: No success in fixing the freeze when deleting the last row of the table after a sort.
+            SwingUtilities.invokeLater(new Runnable() {
+                    public void run() {
+                    int[] selectedRows = tokenTable.getSelectedRows();
+                    for (int i = 0; i < selectedRows.length; i++){
+                        int selectedRow = tokenTable.convertRowIndexToModel(selectedRows[i]);
+                        /*DEBUG*/callbacks.printOutput("selectedRow =  " + selectedRow );
+                        /*DEBUG*/callbacks.printOutput("selectedRow - i =  " + (selectedRow - i) );
+                        tableModel.removeRow(selectedRow - i);
+                    }
+                }
+            });
         }
     }//GEN-LAST:event_removeTokenActionPerformed
 
     private void openRegexWindowActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openRegexWindowActionPerformed
         int selectedRow = tokenTable.getSelectedRow();                        
+        selectedRow = tokenTable.convertRowIndexToModel(selectedRow);
         RegexWindow window = new RegexWindow(this, selectedRow, callbacks);                
         window.setVisible(true);        
     }//GEN-LAST:event_openRegexWindowActionPerformed
