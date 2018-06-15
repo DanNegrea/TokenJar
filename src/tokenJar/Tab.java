@@ -92,16 +92,17 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
        
         int type = e.getType(); 
         int rowId = e.getFirstRow();
-        int column = e.getColumn();
+        //int column = e.getColumn();
         
         //No line was updated or the table was dumped
-        if (rowId==-1)
+        if (rowId<0)
             return;
         
-        //Just 'value' field has changed. Expected to be the only change during running
-        if (column==6 || column==10)
+        /*Value already updated in Datamodel*/
+        if (dataModel.isValueUpdated(rowId))
             return;
-            
+        /*else => value provided by user*/
+         
         Object enable = tableModel.getValueAt(rowId, 0);
          
         //If UPDATE and not valid row then uncheck 'Enable'
@@ -109,20 +110,14 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
         if (enable!=null && (boolean)enable && type==TableModelEvent.UPDATE && !dataModel.checkRow(rowId, true)){
             //*DEBUG*/callbacks.printOutput("row updated, but not valid");
             tableModel.setValueAt(false, rowId, 0);
+            return;
         }
         
-        //Any change triggers unchecking of Master Enable
-        //masterEnable.setSelected(false);
-        //dataModel.setMasterEnable(false);
-        //this.setStatusColor();
-                
-        // Replacing Save button functionality with unchecking Enable
-        /*
-        if (type==TableModelEvent.UPDATE || type==TableModelEvent.DELETE ){
-            //Don't call init, just make save button Red
-            SaveTable.setForeground(Color.red);
-        }
-        */
+        /* Reinit the table*/
+        /* Save settings in Burp storage*/
+        dataModel.init();
+        Vector dataInTable = tableModel.getDataVector();
+        persistSettings.save(dataInTable);
     }
     /*
      * This method is called from within the constructor to initialize the form.
@@ -338,7 +333,6 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
                 .addContainerGap())
         );
 
-        goToSite1.getAccessibleContext().setAccessibleName("Getting Started");
         goToSite1.getAccessibleContext().setAccessibleDescription("");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
@@ -401,10 +395,6 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
     private void masterEnableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_masterEnableActionPerformed
         //*DEBUG*/callbacks.printOutput("masterEnable..() | "+dataModel.getMasterEnable());         
         if(masterEnable.isSelected()){            
-            Vector dataInTable = tableModel.getDataVector();
-            persistSettings.save(dataInTable);        
-            dataModel.init();
-            
             dataModel.setMasterEnable(true);
         }else{
             dataModel.setMasterEnable(false);
@@ -461,7 +451,6 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
         
         JFileChooser fileChooser = new JFileChooser();
         int result = fileChooser.showOpenDialog(this);
-        /*DEBUG*/callbacks.printOutput("1");
         switch (result) {
         case JFileChooser.APPROVE_OPTION:
             File file = fileChooser.getSelectedFile();

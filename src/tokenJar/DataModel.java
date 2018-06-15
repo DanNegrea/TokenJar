@@ -41,6 +41,7 @@ public class DataModel {
     private final PrintWriter stderr;    
     
     private final ScriptEngine JSengine;
+    private boolean[] valueUpdated;
 
     public DataModel(DefaultTableModel tableModel, IBurpExtenderCallbacks callbacks){
         this.tableModel = tableModel;
@@ -63,8 +64,9 @@ public class DataModel {
         tokensByPath = HashMultimap.create(rowIdCount, 3*rowIdCount);
         patterns = new Pattern[rowIdCount]; 
         //where = new boolean[rowIdCount][7]; //7 param types
+        valueUpdated = new boolean[rowIdCount];
         
-        //*DEBUG*/callbacks.printOutput("init() 2 ");
+        //*DEBUG*/callbacks.printOutput("init() 2 ");        
         
         for(int rowId=0; rowId<rowIdCount; rowId++){
             // If enabled and name set and path set and regex set then add to tokensByName and tokensByPath
@@ -73,7 +75,7 @@ public class DataModel {
             //Object eval = tableModel.getValueAt(rowId, 7); //not used
             Object regex = tableModel.getValueAt(rowId, 8);
             Object path = tableModel.getValueAt(rowId, 9);
-            
+                        
             
             if( enable!=null && (boolean)enable && checkRow(rowId, false) ){                
                 boolean updated = false;
@@ -99,6 +101,8 @@ public class DataModel {
                     }
                 }
             }
+            // No changed in values is signaled
+            this.valueUpdated[rowId]=false;
         }
         //*DEBUG*/callbacks.printOutput("end init()");        
     }
@@ -189,7 +193,8 @@ public class DataModel {
             
             JSengine.put("grp", grpValues);            
             String value = JSengine.eval( evalJS ).toString(); //compute the value by evaluating JavaScript
-            
+                       
+            this.valueUpdated[rowId]=true; //signal that the value was updated programatically
             tableModel.setValueAt(value, rowId, 6); //set the actual value
             
             //the update was done for this parameter
@@ -197,13 +202,23 @@ public class DataModel {
             //mark that the latest value is to be obtained from this rowId id
             for (byte type=0; type<=3; type++) // do this for each param type
                 if (isUpdatable(rowId, type))
-                    tokensByName.get(type).put(paramName, rowId);
+                    tokensByName.get(type).put(paramName, rowId);            
         } catch (ScriptException ex) {
             callbacks.printError(ex.getMessage());
         } 
         
     }
     
+    /*The value was updated in the DataModel*/
+    public boolean isValueUpdated(int rowId){
+        if (this.valueUpdated[rowId]){
+            // signal that the value vas updated 
+            //and reset to false for next time
+            this.valueUpdated[rowId]=false;
+            return true;
+        }
+        return false;
+    }
     public void setMasterEnable(boolean value){
         masterEnable = value;
     }    
