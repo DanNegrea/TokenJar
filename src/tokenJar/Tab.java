@@ -94,10 +94,15 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
         int rowId = e.getFirstRow();
         //int column = e.getColumn();
         
-        //No line was updated or the table was dumped
+        //No line was updated or the table was dumpped
         if (rowId<0)
             return;
         
+        /*New "empty" row do just init */
+        if (type==TableModelEvent.INSERT){
+            dataModel.init();
+            return;
+        }        
         /*Value already updated in Datamodel*/
         if (dataModel.isValueUpdated(rowId))
             return;
@@ -150,11 +155,11 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
 
             },
             new String [] {
-                "Enable", "Name", "url", "body", "cookie", "other", "Value", "Eval", "Regex", "Path"
+                "Enable", "Name", "header", "url", "body", "cookie", "other", "Value", "Eval (js code)", "Regex", "Path"
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Boolean.class, java.lang.String.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class
+                java.lang.Boolean.class, java.lang.String.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class
             };
 
             public Class getColumnClass(int columnIndex) {
@@ -167,10 +172,11 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
         tokenTable.getColumnModel().getSelectionModel().setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         if (tokenTable.getColumnModel().getColumnCount() > 0) {
             tokenTable.getColumnModel().getColumn(0).setMaxWidth(55);
-            tokenTable.getColumnModel().getColumn(2).setMaxWidth(37);
-            tokenTable.getColumnModel().getColumn(3).setMaxWidth(40);
-            tokenTable.getColumnModel().getColumn(4).setMaxWidth(50);
-            tokenTable.getColumnModel().getColumn(5).setMaxWidth(40);
+            tokenTable.getColumnModel().getColumn(2).setMaxWidth(50);
+            tokenTable.getColumnModel().getColumn(3).setMaxWidth(37);
+            tokenTable.getColumnModel().getColumn(4).setMaxWidth(40);
+            tokenTable.getColumnModel().getColumn(5).setMaxWidth(50);
+            tokenTable.getColumnModel().getColumn(6).setMaxWidth(40);
         }
 
         addToken.setText("Add");
@@ -352,9 +358,8 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
     }// </editor-fold>//GEN-END:initComponents
 
     private void addTokenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addTokenActionPerformed
-        //tableModel.addRow(new Object[]{ enable, name, url, body, cookie, other, value, eval, regex, path, debug });
-        tableModel.addRow(new Object[]{ false, "", false, false, false, false, "", "grp[1]", "", "*", false });
-        //no need to (re)init for an empty row
+        //tableModel.addRow(new Object[]{ enable, name, header, url, body, cookie, other, value, eval, regex, path });
+        tableModel.addRow(new Object[]{ false, "csrf", false, false, true, false, false, "", "grp[1]", "csrf=([a-zA-Z0-9]*)", "*" });
     }//GEN-LAST:event_addTokenActionPerformed
 
     private void removeTokenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeTokenActionPerformed
@@ -364,13 +369,18 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
             // BUG: No success in fixing the freeze when deleting the last row of the table after a sort.
             SwingUtilities.invokeLater(new Runnable() {
                     public void run() {
-                    int[] selectedRows = tokenTable.getSelectedRows();
-                    for (int i = 0; i < selectedRows.length; i++){
-                        int selectedRow = tokenTable.convertRowIndexToModel(selectedRows[i]);
-                        /*DEBUG*/callbacks.printOutput("selectedRow =  " + selectedRow );
-                        /*DEBUG*/callbacks.printOutput("selectedRow - i =  " + (selectedRow - i) );
-                        tableModel.removeRow(selectedRow - i);
-                    }
+                        try{
+                            int[] selectedRows = tokenTable.getSelectedRows();
+                            for (int i = 0; i < selectedRows.length; i++){
+                                int selectedRow = tokenTable.convertRowIndexToModel(selectedRows[i]);
+                                /*DEBUG*/callbacks.printOutput("selectedRow =  " + selectedRow );
+                                /*DEBUG*/callbacks.printOutput("selectedRow - i =  " + (selectedRow - i) );
+                                tableModel.removeRow(selectedRow - i);
+                            }
+                        }catch(Exception ex){
+                            PrintStream burpErr = new PrintStream(callbacks.getStderr());
+                            ex.printStackTrace(burpErr);
+                        }
                 }
             });
         }
@@ -459,10 +469,9 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
                 ObjectInputStream objectIn = new ObjectInputStream(fileIn); 
             ){    
                 //*DEBUG*/callbacks.printOutput("2");
-                restoreTableData((Vector) objectIn.readObject());
-                //*DEBUG*/callbacks.printOutput("3");
-                //dataModel.init(); //the Save buttons turns red, the init() will be called when the user saves
+                restoreTableData((Vector) objectIn.readObject());               
             } catch (IOException | ClassNotFoundException ex) {
+                callbacks.printOutput("! Error when opening the file to restore");
                 PrintWriter stderr = new PrintWriter(callbacks.getStderr());
                 ex.printStackTrace(stderr);
             }
@@ -501,24 +510,56 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
 
     private void restoreTableData(Vector dataInTable) {
         if (dataInTable==null) return;
-        
+         
          //Get the column names
         Vector<String> columnsInTable = new Vector<>(tableModel.getColumnCount());
         for (int i=0; i<tableModel.getColumnCount(); i++){
             columnsInTable.add(tableModel.getColumnName(i));
         }
+        
+        Vector invalidRows = new Vector(); // rows that don't have 11 elements 
 
+        for (int i=0; i<dataInTable.size(); i++){
+            //*DEBUG*/callbacks.printOutput("dataInTable["+i+"]="+dataInTable.elementAt(i));
+            Vector row = (Vector) dataInTable.elementAt(i);           
+            
+            if (row.size() == 11){ 
+                //Check if previous format (indicated by the "debug" as last field)
+                String debug = String.valueOf(row.elementAt(10));
+                if (debug.equals("true") || debug.equals("false")){
+                    //transform TokenJar v1 format to the v2 format
+                    for (int j=10; j>2; j--){  //move last 8 elements to the right
+                        row.setElementAt(row.elementAt(j-1), j);
+                    }
+                    row.setElementAt(false, 2); // "header" is set to false
+                    //*DEBUG*/callbacks.printOutput("restored dataInTable["+i+"]="+dataInTable.elementAt(i));
+                }
+            }
+            else {  // Does not correspond to any format
+                callbacks.printOutput("! Error when importing line"+row);
+                callbacks.printOutput("!  skipping this line");
+                invalidRows.add(row);
+            }
+        }
+
+        
         //restore the DataVector
+        if (invalidRows.size()>0){
+            dataInTable.removeAll(invalidRows);
+        }
         tableModel.setDataVector(dataInTable, columnsInTable);
         
-        //setDataVector distroys these settings, I make them again
+        dataModel.init();
+        
+        // Duplicate Code: setDataVector distroys these settings, I make them again
         tokenTable.getColumnModel().getSelectionModel().setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         if (tokenTable.getColumnModel().getColumnCount() > 0) {
             tokenTable.getColumnModel().getColumn(0).setMaxWidth(55);
-            tokenTable.getColumnModel().getColumn(2).setMaxWidth(37);
-            tokenTable.getColumnModel().getColumn(3).setMaxWidth(40);
-            tokenTable.getColumnModel().getColumn(4).setMaxWidth(50);
-            tokenTable.getColumnModel().getColumn(5).setMaxWidth(40);
+            tokenTable.getColumnModel().getColumn(2).setMaxWidth(50);
+            tokenTable.getColumnModel().getColumn(3).setMaxWidth(37);
+            tokenTable.getColumnModel().getColumn(4).setMaxWidth(40);
+            tokenTable.getColumnModel().getColumn(5).setMaxWidth(50);
+            tokenTable.getColumnModel().getColumn(6).setMaxWidth(40);
         }
     }
        

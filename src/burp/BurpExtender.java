@@ -1,6 +1,7 @@
 package burp;
 
 import com.google.common.primitives.Bytes; //Guava
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +22,7 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
         helpers = callbacks.getHelpers();
         
         // Set extension name
-        callbacks.setExtensionName("TokenJar 1.0 tracking tokens: antiCSRF or CSurf, special seesion values...");
+        callbacks.setExtensionName("TokenJar 2.0");
         
         tab = new Tab(callbacks);
         dataModel = tab.getDataModel();
@@ -143,26 +144,23 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
                 }
         }
         }catch (Exception ex){
-            callbacks.printError("ERR2");
-            PrintWriter stderr = new PrintWriter(callbacks.getStderr());
-            ex.printStackTrace(stderr);
+            callbacks.printOutput("! Exception while proccising the response");
+            PrintStream burpErr = new PrintStream(callbacks.getStderr());
+            ex.printStackTrace(burpErr);
         }
     }
     /* 
     // Request message
     */
-    private void processRequestMessage(IHttpRequestResponse HTTP_message){
-        
+    private void processRequestMessage(IHttpRequestResponse HTTP_message){        
     	IRequestInfo requestInfo = helpers.analyzeRequest(HTTP_message);
     	byte[] oRequest = HTTP_message.getRequest();
         List<IParameter> oParameters = requestInfo.getParameters();
         List<enhancedParameter> nParameters = new ArrayList<>();
         
-        //*DEBUG*/callbacks.printOutput("processRequestMessage() 1 path="+requestInfo.getUrl().getPath());
-        
         Integer id;
-        int deltaLenthReq=0;       
-        int deltaLenthContent=0; 
+        int deltaRequest=0;       
+        int deltaContentLen=0; 
         int delta; //work variable
         
         //Debug enabled
@@ -177,49 +175,65 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
         //1. Identify all params that are also in the table
         //2. Calculate Content-Length delta length 
         for (IParameter parameter : oParameters) {
-            if (dataModel.getMasterDebug()) {callbacks.printOutput(". Parameter["+parameter.getName()+"]="+parameter.getValue()+" of Type="+enhancedParameter.type.get(parameter.getType()));} /*Debug enabled*/
+            // the parameter type must be between 0 and 4 (0-> header, 1->url, 2->body, 3->cookie, 4->other)
+            byte parameterType = parameter.getType(); 
+            parameterType++; // increment with one to make room for header (0)
             
-            // the parameter type must be between 0 and 3
-            byte parameterType = parameter.getType();
-            if (parameterType>3)
-                parameterType = 3;
-            
-            if ( (id = dataModel.getByName(parameter.getName(), parameterType))!=null ) {
+            if (dataModel.getMasterDebug()) {callbacks.printOutput(". Parameter["+parameter.getName()+"]="+parameter.getValue()+" of Type="+enhancedParameter.Type.get(parameterType));} /*Debug enabled*/
+     
+            if (parameterType>4)
+                parameterType = 4;
+                                    
+            if ( (id = dataModel.getByNameType(parameter.getName(), parameterType))!=null ) {
                 String newValue = dataModel.getValue(id);
                             
                 nParameters.add(new enhancedParameter(parameter, newValue));
                 delta = newValue.length() - (parameter.getValueEnd() - parameter.getValueStart());
-                deltaLenthReq += delta;
-                
+                deltaRequest += delta;
+                                              
                 //Update Content-Length only for body parameters
-                if ( parameterType == IParameter.PARAM_BODY || 
-                        parameterType >= 3 ) /*other parameter type*/
-                    deltaLenthContent += delta;
+                if ( parameterType == 2 || parameterType == 4 ){ // 2->body, 4->other
+                    deltaContentLen += delta;
+                }
+                //*DEBUG*/callbacks.printOutput("deltaContentLen="+deltaContentLen);
             }
-        }        
-        //EXIT if no parameter was found
-        if (nParameters.isEmpty()){
-            if (dataModel.getMasterDebug()){callbacks.printOutput("= No parameters to update");}; //Debug enabled
-            return;
-        }
+        }      
         
         //Content-Length preparation
         List<String> HTTP_headers = requestInfo.getHeaders();        
         int oContLenStart=0, oContLenLength=0, oContLenValue=0;
         boolean oContLenProccess = false;
-                
+        
+        /*Processing headers*/
         for(int i=0; i<HTTP_headers.size(); i++){
             
             if (dataModel.getMasterDebug()) {callbacks.printOutput(". Header["+i+"]="+HTTP_headers.get(i));} /*Debug enabled*/
             
-            if ( HTTP_headers.get(i).startsWith("Content-Length:")) {
-                String Content_Length = HTTP_headers.get(i);
+            String HTTP_headerName = HTTP_headers.get(i).split(":")[0];
+            
+            /*Identify if any parameter is a header parameter*/
+            if ( (id = dataModel.getByNameType(HTTP_headerName, (byte) 0))!=null ) {
+                String HTTP_header = HTTP_headers.get(i);
+                
+                int headerStart = Bytes.indexOf(oRequest, HTTP_header.getBytes());
+                int valueStart = headerStart + HTTP_headerName.length() + 2; //2 accounts for ": " 
+                int valueEnd = headerStart + HTTP_header.length();
+                String newValue = dataModel.getValue(id);
+                //create a nwe enhanced param
+                nParameters.add(new enhancedParameter(HTTP_headerName, (byte) 0, valueStart, valueEnd, newValue));
+                //*DEBUG*/callbacks.printOutput("nParameters.add(new enhancedParameter("+HTTP_headerName+", (byte) 0 ,"+ valueStart+", "+valueEnd+", "+newValue+"))");                
+                                              
+                delta = newValue.length() - (valueEnd - valueStart);
+                deltaRequest += delta;
+            }
+            
+            if ( HTTP_headerName.equals("Content-Length")) {
+                String Content_Length = HTTP_headers.get(i);                
                 try {                    
                     oContLenStart = Bytes.indexOf(oRequest, Content_Length.getBytes());
                     oContLenLength = Content_Length.length();
-                    oContLenValue = Integer.parseInt(Content_Length.substring("Content-Length:".length()).trim());                
-                    //*DEBUG*/callbacks.printOutput("###oContLenStart="+oContLenStart+", oContLenLength="+oContLenLength+", oContLenValue="+oContLenValue);       
-                
+                    oContLenValue = Integer.parseInt(Content_Length.substring("Content-Length:".length()).trim());                            
+                     
                     oContLenProccess = true;
                     break;
                 }
@@ -228,14 +242,22 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
                     // if none was found the oContLenProccess shold be false
                     if (dataModel.getMasterDebug()){  /*Debug enabled*/
                         callbacks.printOutput("! NumberFormatException when converting "+Content_Length );
-                        callbacks.printOutput("! skipped updating this header ");
+                        callbacks.printOutput("! skipped updating 'Content-Length' header ");
                     }
                 }
             }
         }
         //end Content-Length preparation
         
-        byte[] nRequest = new byte[oRequest.length + deltaLenthReq];
+        //EXIT if no parameter was found
+        if (nParameters.isEmpty()){
+            if (dataModel.getMasterDebug()){callbacks.printOutput("= No parameters to update");}; //Debug enabled
+            return;
+        }
+        //need to sort because headers where introduced at the end
+        nParameters.sort((p1, p2) -> p1.valueStart - p2.valueStart);
+        
+        byte[] nRequest = new byte[oRequest.length + deltaRequest];
         
         int oStart = 0;
         int oEnd = oRequest.length;
@@ -245,11 +267,9 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
         //1. Update all parameters identified above
         //2. Update the Content-Length
         for (enhancedParameter parameter : nParameters) {             
-            oParamStart  = parameter.IParam.getValueStart();
-            oParamEnd = parameter.IParam.getValueEnd();
-            
-            //*DEBUG*/callbacks.printOutput("processRequestMessage() 6");
-            
+            oParamStart  = parameter.valueStart;
+            oParamEnd = parameter.valueEnd;
+           
             //Content-Length update
             if (oContLenProccess && oParamStart > oContLenStart){ //found the parameter just after Content-Length?
                 //copy everithing before the Content-Length
@@ -259,9 +279,9 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
                 nStart+= delta;
                 
                 //Compute and append the new Content-Length
-                String nContLen = "Content-Length: "+ ((int) oContLenValue + (int) deltaLenthContent);
+                String nContLen = "Content-Length: "+ ((int) oContLenValue + (int) deltaContentLen);
                 
-                if (dataModel.getMasterDebug()) {callbacks.printOutput("+ Content-Length="+ ((int) oContLenValue + (int) deltaLenthContent));} /*Debug enabled*/
+                if (dataModel.getMasterDebug()) {callbacks.printOutput("+ Content-Length="+ ((int) oContLenValue + (int) deltaContentLen));} /*Debug enabled*/
                 
                 int nContLenLength = nContLen.length();
                 System.arraycopy(nContLen.getBytes(), 0, nRequest, nStart, nContLenLength);
@@ -281,14 +301,9 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
             nStart+= delta;
             
             //DEBUG enabled
-            if (dataModel.getMasterDebug()){
-                // the parameter type must be between 0 and 3
-                byte parameterType = parameter.IParam.getType();
-                if (parameterType>3)
-                    parameterType = 3;
-                           
-                callbacks.printOutput("+ Parameter["+parameter.IParam.getName()+"]="+parameter.newvalue+" of Type="+ enhancedParameter.type.get(parameterType));
-                HTTP_message.setComment( HTTP_message.getComment() + " new:" + parameter.IParam.getName()+" ");                
+            if (dataModel.getMasterDebug()){                        
+                callbacks.printOutput("+ Parameter["+parameter.name+"]="+parameter.newvalue+" of Type="+ enhancedParameter.Type.get(parameter.type));
+                HTTP_message.setComment( HTTP_message.getComment() + " new:" + parameter.name + " ");                
             }
             //end DEBUG
 
@@ -310,33 +325,55 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
 
             }catch (Exception ex){
                 callbacks.printOutput("! arraycopy exception on path=" + requestInfo.getUrl().getPath() + ", oStart=" + oStart + ", nStart=" + nStart );                
-                PrintWriter stderr = new PrintWriter(callbacks.getStderr());
-                ex.printStackTrace(stderr);
-            }
-            
+                PrintStream burpErr = new PrintStream(callbacks.getStderr());
+                ex.printStackTrace(burpErr);
+            }            
         }
         //Send the new request 
+        if (dataModel.getMasterDebug()){ 
+            callbacks.printOutput(".......Final Request......."); 
+            callbacks.printOutput(callbacks.getHelpers().bytesToString(nRequest)); 
+            callbacks.printOutput("..........................."); 
+        }            
         HTTP_message.setRequest(nRequest);
     } 
 }
 
 class enhancedParameter{
-    public static List<String> type;
+    public static List<String> Type;
     static {        
-        type = new ArrayList(7);
-        type.add(IParameter.PARAM_URL, "url");
-        type.add(IParameter.PARAM_BODY, "body");
-        type.add(IParameter.PARAM_COOKIE, "cookie");
-        type.add(IParameter.PARAM_XML, "xml");
-        type.add(IParameter.PARAM_XML_ATTR, "xml attr");
-        type.add(IParameter.PARAM_MULTIPART_ATTR, "multipart attr");
-        type.add(IParameter.PARAM_JSON, "json");
+        Type = new ArrayList(8);
+        Type.add(0,                           "header");
+        //increment with one to make room for header (0)
+        Type.add(IParameter.PARAM_URL+1,      "url");
+        Type.add(IParameter.PARAM_BODY+1,     "body");      
+        Type.add(IParameter.PARAM_COOKIE+1,   "cookie");       
+        Type.add(IParameter.PARAM_XML+1,      "xml"); /*other - all below types are reporesented by this type*/
+        Type.add(IParameter.PARAM_XML_ATTR+1, "xml attr");
+        Type.add(IParameter.PARAM_MULTIPART_ATTR+1, "multipart attr");
+        Type.add(IParameter.PARAM_JSON+1,     "json");
     }
 
+    /*Construct new enhancedParam from IParam (used for Burp listed params)*/
     public enhancedParameter(IParameter IParam, String newValue){
-        this.IParam = IParam;
+        this.name = IParam.getName();
+        this.type = IParam.getType();
+        this.type++; //increment with one to make room for header (0)
+        this.valueStart = IParam.getValueStart();
+        this.valueEnd = IParam.getValueEnd();
         this.newvalue = newValue;
     }
-    public IParameter IParam;
+    /*Construct new enhancedParam from it's components (used for Header)*/
+    public enhancedParameter(String name, byte type, int valueStart, int valueEnd, String newValue){
+        this.name = name;
+        this.type = type;
+        this.valueStart = valueStart;
+        this.valueEnd = valueEnd;
+        this.newvalue = newValue;
+    }
+    public String name;
+    public byte type;
+    public int valueStart;
+    public int valueEnd;   
     public String newvalue;
 }
