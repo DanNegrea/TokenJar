@@ -9,12 +9,12 @@ import burp.IBurpExtenderCallbacks;
 import burp.ITab;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Desktop;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import javax.swing.table.DefaultTableModel;
-import java.net.URI;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -26,6 +26,7 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 
 
 /**
@@ -37,7 +38,7 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
     private final DataModel dataModel;
     final IBurpExtenderCallbacks callbacks;
     private final PersistSettings persistSettings;
-
+    private Timer timerNewHere;
     
     /**
      * Creates new form Panel
@@ -63,6 +64,16 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
         tokenTable.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
         
         tableModel.addTableModelListener(this);
+        
+        /*Blink the 'New Here' meesage*/
+        if ( "true".equals(callbacks.loadExtensionSetting("NewHere:hide"))){
+            jLabelNewHere.setText("");
+        }
+        else{
+            timerNewHere = new Timer(1000, new BlinkLabel(jLabelNewHere));
+            timerNewHere.start();
+        }
+        
     }
     
     public DataModel getDataModel() {
@@ -85,7 +96,7 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
     public Component getUiComponent() {
         return this;
     }
-    
+  
     @Override
     public void tableChanged(TableModelEvent e) {
         //*DEBUG*/callbacks.printOutput("TableChanged() e.getType="+e.getType()+"  getFirstRow=: "+e.getFirstRow()+" getLastRow="+e.getLastRow()+"");
@@ -99,7 +110,7 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
             return;
         
         /*New "empty" row do just init */
-        if (type==TableModelEvent.INSERT){
+        if (type==TableModelEvent.INSERT || type == TableModelEvent.DELETE){
             dataModel.init();
             return;
         }        
@@ -148,6 +159,7 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
         masterRepeater = new javax.swing.JCheckBox();
         masterIntruder = new javax.swing.JCheckBox();
         masterProxy = new javax.swing.JCheckBox();
+        jLabelNewHere = new javax.swing.JLabel();
 
         tokenTable.setAutoCreateRowSorter(true);
         tokenTable.setModel(new javax.swing.table.DefaultTableModel(
@@ -236,7 +248,6 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
         goToSite1.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
         goToSite1.setForeground(new java.awt.Color(51, 0, 255));
         goToSite1.setText("Getting Started");
-        goToSite1.setToolTipText("<html>\n<i>Start from right to left</i><br/><br/>\n<b># Extracting the token</b><br/>\nPath: extract the token from this URL<br/>\nRegex: extract a certain value from response<br/>\nEval: transform the value<br/>\n<br/>\n<b>#Storing the token</b><br/>\nValue: initial value (first run)<br/>\n<br/>\n<b>#Apply the token</b><br/>\nName: token name in request<br/>\nurl, body,...: token position in request<br/>\n</html>");
         goToSite1.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 goToSite1MouseClicked(evt);
@@ -267,6 +278,12 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
             }
         });
 
+        jLabelNewHere.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
+        jLabelNewHere.setForeground(java.awt.Color.magenta);
+        jLabelNewHere.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabelNewHere.setText("First time here >>");
+        jLabelNewHere.setToolTipText("");
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -286,7 +303,9 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
                         .addComponent(masterRepeater)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(masterDebug)
-                        .addGap(165, 165, 165))
+                        .addGap(29, 29, 29)
+                        .addComponent(jLabelNewHere, javax.swing.GroupLayout.PREFERRED_SIZE, 123, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(13, 13, 13))
                     .addComponent(jScrollPane2))
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -322,7 +341,8 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
                         .addComponent(goToSite1)
                         .addComponent(masterRepeater)
                         .addComponent(masterIntruder)
-                        .addComponent(masterProxy)))
+                        .addComponent(masterProxy)
+                        .addComponent(jLabelNewHere)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel2Layout.createSequentialGroup()
@@ -486,14 +506,7 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
     }//GEN-LAST:event_importConfActionPerformed
 
     private void goToSite1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_goToSite1MouseClicked
-        URI uri = URI.create("https://dannegrea.github.io/TokenJar");
-        if (uri != null && Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-            try {
-                Desktop.getDesktop().browse(uri);
-            } catch (IOException e) {
-                //e.printStackTrace();
-            }
-        }
+        showGettingStartedDialog();
     }//GEN-LAST:event_goToSite1MouseClicked
 
     private void masterProxyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_masterProxyActionPerformed
@@ -562,12 +575,22 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
             tokenTable.getColumnModel().getColumn(6).setMaxWidth(40);
         }
     }
-       
+    
+    
+    /*Display 'Getting Started' modal*/
+    private void showGettingStartedDialog(){
+        GettingStartedDialog gettingStartedDialog = new GettingStartedDialog(this, true);
+        gettingStartedDialog.setLocationRelativeTo(SwingUtilities.getWindowAncestor((Component) this));        
+        gettingStartedDialog.setVisible(true);
+    }
+    
+    
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton addToken;
     private javax.swing.JButton exportConf;
     private javax.swing.JLabel goToSite1;
     private javax.swing.JButton importConf;
+    private javax.swing.JLabel jLabelNewHere;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JCheckBox masterDebug;
@@ -581,4 +604,31 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
     private javax.swing.JTable tokenTable;
     // End of variables declaration//GEN-END:variables
 
+    public void eraseNewHereLabel(){
+        timerNewHere.stop();
+        this.jLabelNewHere.setText(""); 
+        callbacks.saveExtensionSetting("NewHere:hide", "true");
+    }
+    
+}
+class BlinkLabel implements ActionListener {  
+        private javax.swing.JLabel label;
+        private int count;
+
+        public BlinkLabel(javax.swing.JLabel label){
+            this.label = label;
+        }
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if(count % 2 == 0){
+                label.setOpaque(false);
+                label.setForeground(java.awt.Color.RED);
+            }
+            else{
+                label.setOpaque(true);
+                label.setForeground(java.awt.Color.MAGENTA);
+                label.setBackground(java.awt.Color.YELLOW);
+            }
+            count++;
+        }  
 }

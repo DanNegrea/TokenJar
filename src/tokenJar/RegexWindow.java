@@ -295,7 +295,7 @@ public class RegexWindow extends javax.swing.JFrame {
 
     private void saveOptionsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveOptionsActionPerformed
         
-        groupDebug.setText(groupDebug.getText() +"\n saveOptionsActionPerformed");
+        groupDebug.setText(groupDebug.getText() +"\n Saved");
         
         //save Eval and Extract to parent window
         parent.setCell(selectedRow, 8, (Object) evalField.getSelectedItem()); //evelCol
@@ -343,7 +343,7 @@ public class RegexWindow extends javax.swing.JFrame {
                     hl.addHighlight(foundTextIndex, foundTextIndex +foundTextLen, DefaultHighlighter.DefaultPainter);
                     //foundTextIndex = responseText.indexOf(responseText, foundTextIndex + foundTextLen); //not needed anymore; I changed while to if            
                 } catch (BadLocationException ex) {
-                    /*DEBUG*/debug.append("Exception: ").append(ex.toString()).append("\n");
+                    /*DEBUG*/debug.append("! Exception: ").append(ex.toString()).append("\n");
                     PrintWriter stderr = new PrintWriter(callbacks.getStderr());
                     ex.printStackTrace(stderr);
                 }
@@ -364,7 +364,7 @@ public class RegexWindow extends javax.swing.JFrame {
                 valueField.setText(value); //set the actual value
 
             } catch (ScriptException ex) {
-                /*DEBUG*/debug.append("Exception: ").append(ex.toString()).append("\n");
+                /*DEBUG*/debug.append("! Exception: ").append(ex.toString()).append("\n");
                 PrintWriter stderr = new PrintWriter(callbacks.getStderr());
                 ex.printStackTrace(stderr);
             }
