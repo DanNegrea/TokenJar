@@ -66,11 +66,11 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
         tableModel.addTableModelListener(this);
         
         /*Blink the 'New Here' meesage*/
+        timerNewHere = new Timer(1000, new BlinkLabel(jLabelNewHere));
         if ( "true".equals(callbacks.loadExtensionSetting("NewHere:hide"))){
             jLabelNewHere.setText("");
         }
         else{
-            timerNewHere = new Timer(1000, new BlinkLabel(jLabelNewHere));
             timerNewHere.start();
         }
         
