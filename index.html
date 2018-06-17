@@ -8,7 +8,7 @@
 
     <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
 
-    <title>Tokenjar</title>
+    <title>Tokenjar v2.0</title>
   </head>
 
   <body>
@@ -18,13 +18,8 @@
         <header class="inner">
           <a id="forkme_banner" href="https://github.com/DanNegrea/TokenJar">View on GitHub</a>
 
-          <h1 id="project_title">Tokenjar</h1>
-          <h2 id="project_tagline">Burp Suite extension. Useful for managing tokens like anti-CSRF, CSurf, Session values. Can be used to set params that require random numbers or params that are computed based on special forumla.</h2>
-
-            <section id="downloads">
-              <a class="zip_download_link" href="https://github.com/DanNegrea/TokenJar/zipball/master">Download this project as a .zip file</a>
-              <a class="tar_download_link" href="https://github.com/DanNegrea/TokenJar/tarball/master">Download this project as a tar.gz file</a>
-            </section>
+          <h1 id="project_title">Tokenjar v2.0</h1>
+          <h2 id="project_tagline">Burp Suite extension. Useful for managing tokens like anti-CSRF, CSurf, Session values. Can be used to set params that require random numbers or params that are computed based on special forumla.</h2>            
         </header>
     </div>
 
@@ -42,7 +37,7 @@ This extension is the easiest way to manage tokens used for different purposes. 
 <h2>
 <a id="download-the-plugin" class="anchor" href="#download-the-plugin" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Download the plugin</h2>
 
-<p>The ready to use jar can be downloaded from <a href="https://github.com/DanNegrea/TokenJar/releases/download/1.0/TokenJar_1.0.jar">here</a></p>
+<p>The ready to use jar can be downloaded from <a href="https://github.com/DanNegrea/TokenJar/releases/download/2.0/TokenJar.jar">here</a></p>
 
 <p>Go ahead and improve this extension. You can browse through the code <a href="https://github.com/DanNegrea/TokenJar">here</a>.</p>
 
@@ -66,32 +61,62 @@ This extension is the easiest way to manage tokens used for different purposes. 
 
 <ol>
 <li>Add a new line</li>
-<li>Provide the name of the parameter and where it is located: url, body, cookie, other (can be one or more)</li>
-<li>Leave the value empty, this will be updated by the plugin.</li>
-<li>Think about how the value will be calculated. The default formula is to use the first matching group from Regex. Here you can use javascript to concatenate, generate random values, do conversions, etc. </li>
-<li>Define the regular expression used to extract relevant values from server responses. You can extract one or more groups. </li>
-<li>Test your regular expression by clicking "Regex". Once done save and close the window.</li>
+
+<li>Change extracting settings:<br/>
+<b>Path</b>-  a URL that limits the location from where the token is extracted (reponse)<br/>
+<b>Regex</b>- expression that identifies the desired value. Must have at least one matching group. Here you can use javascript to concatenate, generate random values, do conversions, etc.<br/>
+<b>Eval</b>-  javascript code for transforming the value. grp[1], grp[2], ... return the matched group 1, 2, ...<br/>
+</li>
+
+<li>Set an initial value:<br/>
+<b>Value</b> - an optional initial value for the first run<br/>
+</li>
+
+<li>Set parameter name and location:</b><br/>
+<b>Name</b>- token name as it appears in request<br/>
+<b>header, url, body, ...</b>- token position in request. Multiple choises are possible.<br/>
+<i>header</i> - a custom header contains the token. Token name is without colon ":" <br/>
+<i>url</i> - the URL query contains the token as  parameter <br/>
+<i>body</i> - the token is an usual POST parameter <br/>
+<i>cookie</i> - one of the cookies contains the token <br/>
+<i>other</i> - for tokens inside json, xml, xml attribute, multi-part attribute
+</li>
+
+<li>Optionally test your regular expression by clicking "Regex".</li>
 <li>Enable the line and the master enable checkbox. </li>
-<li>Test it.</li>
+<li>All done!</li>
 </ol>
 
 <h3>
 <a id="example" class="anchor" href="#example" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Example</h3>
 
 <ol>
-<li>I added a new line with the scope of extracting the anti-CSRF value from a hidden input. 
-<img src="https://raw.githubusercontent.com/DanNegrea/TokenJar/gh-pages/images/Getting%20started%201%20-%20adding%20a%20new%20line.png" alt="">
+<li>I added a new line with the scope of extracting the <i>csrf</i> value from a javascript variable. 
+<img src="https://raw.githubusercontent.com/DanNegrea/TokenJar/gh-pages/images/example1.png" alt="">
 </li>
 <li>I tested the Regex and the Eval. To do this I used a response snippet.
-<img src="https://raw.githubusercontent.com/DanNegrea/TokenJar/gh-pages/images/Getting%20started%202%20-%20testing%20regex.png" alt="">
+<img src="https://raw.githubusercontent.com/DanNegrea/TokenJar/gh-pages/images/example2.png" alt="">
 </li>
 <li>Enable the line and the master switch 
-<img src="https://raw.githubusercontent.com/DanNegrea/TokenJar/gh-pages/images/Getting%20started%20%203%20-%20enable.png" alt="">
-</li>
-<li>Test it and see if the Value get's updated
-<img src="https://raw.githubusercontent.com/DanNegrea/TokenJar/gh-pages/images/Getting%20started%204%20-%20it's%20working.png" alt="">
+<img src="https://raw.githubusercontent.com/DanNegrea/TokenJar/gh-pages/images/example3.png" alt="">
 </li>
 </ol>
+
+<h2>
+<a id="debug" class="anchor" href="#debug" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Debug</h2>
+
+By enabling debugging real time information can be consulted in the Output window (Extender >Extensions >select TokenJar >Output).
+
+<i><b>Request:</b></i><br/>
+<i>parameters</i> - name and type. Case sensitivity matters! <br/>
+<i>headers</i> - name and current value <br/>
+<i>tokens</i> - that have been processed <br/>
+<i>request</i> - full final request (after processing was done) <br/>
+<i><b>Request:</b></i><br/>
+<i>path</i> - the processed URL<br/>
+<i>regex</i> - the expression that matched<br/>
+<i>groups</i> - the values captured in each group <br/>
+
 
 <h2>
 <a id="notes" class="anchor" href="#notes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Notes</h2>
@@ -99,6 +124,8 @@ This extension is the easiest way to manage tokens used for different purposes. 
 <ul>
 <li>Master enable will be unchecked when Burp restarts</li>
 <li>State should be preserved after restart, nevertheless, you can save and load the configuration later using the bottom-right bottoms</li>
+<li>All token locations (header, url, body, ..) can be enabled if not sure what to use and when this does not matter. <br/>
+It matters only when multiple parameters have the same name. By doing so the performance might be impacted.</li>
 </ul>
 
 <h2>
@@ -113,7 +140,7 @@ This extension is the easiest way to manage tokens used for different purposes. 
 <a id="requirements-for-building" class="anchor" href="#requirements-for-building" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Requirements for building</h3>
 
 <ul>
-<li>Google Guava 18.0+</li>
+<li>Google Guava 25.1</li>
 </ul>
       </section>
     </div>
