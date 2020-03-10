@@ -235,7 +235,6 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
                     oContLenValue = Integer.parseInt(Content_Length.substring("Content-Length:".length()).trim());                            
                      
                     oContLenProccess = true;
-                    break;
                 }
                 catch (NumberFormatException e){
                     // do nothing, let the for search for another "Content-Length" header

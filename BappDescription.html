@@ -1,0 +1,33 @@
+<p>This extension provides a way of managing tokens like anti-CSRF, CSurf, Session IDs.</p>
+<p>It can be used to set parameters that require random numbers or parameters that are computed based on application responses.</p>
+
+<h2>It works by</h2>
+<ul>
+<li>extracting tokens from responses using your RegEx</li>
+<li>insert them in responses after manipulating the values with javascript.</li>
+</ul>
+
+<h2>Multiple parameter choises</h2>
+<ul>
+<li><b>header</b> - the token is contained by a custom header</li>
+<li><b>url</b> - the URL query contains the token </li>
+<li><b>body</b> - the token is an usual POST parameter </li>
+<li><b>cookie</b> - one of the cookies contains the token </li>
+<li><b>other</b> - json, xml, xml attribute, multi-part attribute</li>
+</ul>
+
+<h2>Scoping to different tools</h2>
+<ul>
+<li>Proxy</li>
+<li>Intruder</li>
+<li>Repeater</li>
+<li>Scanner</li>
+</ul>
+
+<h2>Special features include</h2>
+<ul>
+<li>a module for testing your RegEx</li>
+<li>enhanced debugging messages</li>
+</ul>
+
+<p>Please refer to the <a href="https://dannegrea.github.io/TokenJar/">documentation</a> for more details.</p>
