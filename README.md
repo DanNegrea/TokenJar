@@ -9,4 +9,4 @@ Here is just brief information. More details are on plugin GitHub [page](http://
 * JRE or JDK 1.8
 
 ## Requirements for building
-* Google Guava 25.1
+* Google Guava 28.2
