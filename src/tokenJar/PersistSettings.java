@@ -8,12 +8,14 @@ package tokenJar;
 import burp.IBurpExtenderCallbacks;
 import com.google.common.base.Strings;
 import com.google.common.collect.EvictingQueue;
+import com.google.gson.Gson;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Vector;
 
 /**
@@ -37,16 +39,17 @@ public class PersistSettings {
     }
        
     public void save(Vector dataInTable){
-        try (
-            ByteArrayOutputStream byteArrOut = new ByteArrayOutputStream();
-            ObjectOutputStream objectOut = new ObjectOutputStream(byteArrOut);
-        ){       
-            objectOut.writeObject(dataInTable);
-            callbacks.saveExtensionSetting("dataInTable", byteArrOut.toString());  //Java-Lesson objectOut is not suitable here
-        } catch (IOException ex) {
+        try{            
+            Gson gson = new Gson();
+            String jsonInString = gson.toJson(dataInTable);
+            callbacks.saveExtensionSetting("TokenJar.dataInTable", jsonInString);
+            //Signal that old format up to TokenJar 2.0 is no longer in use
+            callbacks.saveExtensionSetting("dataInTable", "");
+        } catch (Exception ex) {
             PrintWriter stderr = new PrintWriter(callbacks.getStderr());
             ex.printStackTrace(stderr);
         }
+        
         save(evalQueue, "evalQueue");
         save(regexQueue, "regexQueue");
     }
@@ -62,31 +65,52 @@ public class PersistSettings {
             ex.printStackTrace(stderr);
         }
     }
-    
-    public Vector restore(){        
+ 
+    public Vector restore(){              
+        Vector restoredDataInTable = null;
+        Vector dataInTable = new Vector();
+        
+        /*Attempt to restore data from version TokenJar 2.0*/
         String tableData= callbacks.loadExtensionSetting("dataInTable");
-        Vector dataInTable = null;
-        
-        if (tableData == null)  return null;
-        
-        try (
-            ByteArrayInputStream byteArrIn = new ByteArrayInputStream(tableData.getBytes());
-            ObjectInputStream objectIn = new ObjectInputStream(byteArrIn);
-        ){  
-            //get data in table from the serialized object
-            dataInTable = (Vector) objectIn.readObject();
-            
-            //second objective, attempt to restore the evalQueue and regexQueue
-            evalQueue = restore(evalQueue, "evalQueue");
-            regexQueue = restore(regexQueue, "regexQueue");
-            
-        } catch (IOException | ClassNotFoundException ex) {
-            PrintWriter stderr = new PrintWriter(callbacks.getStderr());
-            ex.printStackTrace(stderr);
+        //if old setting still in settings store
+        if (!Strings.isNullOrEmpty(tableData)){
+            //*DEBUG*/callbacks.printOutput("!Strings.isNullOrEmpty(tableData)");
+            try (
+                ByteArrayInputStream byteArrIn = new ByteArrayInputStream(tableData.getBytes());
+                ObjectInputStream objectIn = new ObjectInputStream(byteArrIn);
+            ){  
+                //get data in table from the serialized object
+                dataInTable = (Vector) objectIn.readObject();
+            } catch (IOException | ClassNotFoundException ex) {
+                PrintWriter stderr = new PrintWriter(callbacks.getStderr());
+                ex.printStackTrace(stderr);
+            }            
         }
-        finally{
-             return dataInTable;
-        }     
+        
+        /*Attempt to restore data from newer version*/
+        if (dataInTable.size()==0) {
+            //*DEBUG*/callbacks.printOutput("dataInTable.size()==0");
+            try 
+            {
+                String strObj = callbacks.loadExtensionSetting("TokenJar.dataInTable");
+                Gson gson = new Gson();
+                restoredDataInTable = (Vector) gson.fromJson(strObj, Vector.class);
+
+                //The respored data is a Vector of ArrayLists, the result should be a Vector of Vectors.
+                for (int i=0; i<restoredDataInTable.size(); i++){
+                    Vector row = new Vector( (ArrayList) restoredDataInTable.elementAt(i));
+                    dataInTable.add(row);
+                }
+            } catch (Exception ex) {
+                PrintWriter stderr = new PrintWriter(callbacks.getStderr());
+                ex.printStackTrace(stderr);
+            }
+        }
+        //second objective, attempt to restore the evalQueue and regexQueue
+        evalQueue = restore(evalQueue, "evalQueue");
+        regexQueue = restore(regexQueue, "regexQueue");
+        
+        return dataInTable;
     }
     
     private EvictingQueue<String> restore(EvictingQueue<String> queue, String queueName){
@@ -139,4 +163,3 @@ public class PersistSettings {
             return new Object[0];
     }  
 }
-
