@@ -6,22 +6,34 @@
 package tokenJar;
 
 import burp.IBurpExtenderCallbacks;
+import static burp.BurpExtender.*;
 import burp.ITab;
+import com.google.common.base.Strings;
+import com.google.common.primitives.Bytes;
+import com.google.gson.Gson;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import javax.swing.table.DefaultTableModel;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.io.RandomAccessFile;
+import java.nio.channels.Channels;
+import java.util.ArrayList;
 import java.util.Vector;
 import javax.swing.JFileChooser;
 import javax.swing.event.TableModelEvent;
@@ -464,14 +476,16 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
 
         switch (result) {
         case JFileChooser.APPROVE_OPTION:
-            File file = fileChooser.getSelectedFile();
+            File file = fileChooser.getSelectedFile();            
             try (
-                FileOutputStream fileOut = new FileOutputStream(file);
-                ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
+                FileWriter fileOut = new FileWriter(file);
             ){
+                Gson gson = new Gson();
                 Vector dataInTable = tableModel.getDataVector();
-                objectOut.writeObject(dataInTable);
-            } catch (IOException ex) {
+                String dataToStore = gson.toJson(dataInTable);
+                dataToStore = NAME + VERSION + dataToStore;                
+                fileOut.write(dataToStore);
+            } catch (Exception ex) {
                 PrintWriter stderr = new PrintWriter(callbacks.getStderr());
                 ex.printStackTrace(stderr);
             }
@@ -485,20 +499,76 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
     }                                          
 
     private void importConfActionPerformed(java.awt.event.ActionEvent evt) {                                           
-        //*DEBUG*/callbacks.printOutput("importConfActionPerformed()");
-        
         JFileChooser fileChooser = new JFileChooser();
         int result = fileChooser.showOpenDialog(this);
         switch (result) {
         case JFileChooser.APPROVE_OPTION:
             File file = fileChooser.getSelectedFile();
-            try (
-                FileInputStream fileIn = new FileInputStream(file);
-                ObjectInputStream objectIn = new ObjectInputStream(fileIn); 
-            ){    
-                //*DEBUG*/callbacks.printOutput("2");
-                restoreTableData((Vector) objectIn.readObject());               
-            } catch (IOException | ClassNotFoundException ex) {
+            
+            //Magic Bytes
+            final byte mbSerializedObj[] = {(byte)0xAC, (byte)0xED, (byte)0x00, (byte)0x05};
+            byte mbFile[] = new byte[8];
+            
+            try (                
+                RandomAccessFile fileIn = new RandomAccessFile(file,"r");
+            ){  
+                //Read magic bytes
+                fileIn.read(mbFile, 0 , NAME.length());
+                
+                /*Attempt to restore data from version TokenJar 2.0*/
+                if (Bytes.indexOf(mbFile, mbSerializedObj)==0){
+                    fileIn.seek(0);                    
+                    try (
+                        InputStream is = Channels.newInputStream(fileIn.getChannel());
+                        ObjectInputStream objectIn = new ObjectInputStream(is); 
+                    ){
+                        Vector dataInTable = (Vector) objectIn.readObject();
+                        restoreTableData(dataInTable);
+                        persistSettings.save(dataInTable);
+                    } catch (IOException | ClassNotFoundException ex) {
+                        callbacks.printOutput("! Error loading settings when opening the file of type serialized object");
+                        PrintWriter stderr = new PrintWriter(callbacks.getStderr());
+                        ex.printStackTrace(stderr);
+                    }
+                /*Attempt to restore data from newer version*/
+                } else 
+                    if (Bytes.indexOf(mbFile, NAME.getBytes())==0){                        
+                        try 
+                        {   
+                            //TODO Magic Bytes to be used in future version to check the settings format version number
+                            
+                            //Skip Magic Bytes and Version
+                            int fileStart = NAME.length()+VERSION.length();
+                            int fileLen = (int) fileIn.length()-NAME.length()-VERSION.length();                            
+                            
+                            byte[] fileContent = new byte[fileLen];
+                            
+                            fileIn.seek(fileStart);
+                            fileIn.read(fileContent, 0, fileLen); // wrong results with fileStart as offset 
+
+                            InputStreamReader is = new InputStreamReader(new ByteArrayInputStream(fileContent));
+                            Gson gson = new Gson();                            
+                            Vector restoredDataInTable = (Vector) gson.fromJson(is, Vector.class);
+
+                            //The respored data is a Vector of ArrayLists, the result should be a Vector of Vectors.
+                            Vector dataInTable = new Vector();
+                            for (int i=0; i<restoredDataInTable.size(); i++){
+                                Vector row = new Vector( (ArrayList) restoredDataInTable.elementAt(i));
+                                dataInTable.add(row);
+                            }
+                            restoreTableData(dataInTable);
+                            persistSettings.save(dataInTable);
+                            
+                        } catch (Exception ex) {
+                            callbacks.printOutput("! Error loading settings when opening the file of type json");
+                            callbacks.printOutput(ex.toString());               
+                            PrintWriter stderr = new PrintWriter(callbacks.getStderr());
+                            ex.printStackTrace(stderr);                           
+                        }
+                    } else
+                        callbacks.printOutput("! Error - unknown format for the file");
+             
+            } catch (IOException ex) {
                 callbacks.printOutput("! Error when opening the file to restore");
                 PrintWriter stderr = new PrintWriter(callbacks.getStderr());
                 ex.printStackTrace(stderr);
