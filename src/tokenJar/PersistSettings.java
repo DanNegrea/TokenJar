@@ -6,6 +6,7 @@
 package tokenJar;
 
 import burp.IBurpExtenderCallbacks;
+import static burp.BurpExtender.*;
 import com.google.common.base.Strings;
 import com.google.common.collect.EvictingQueue;
 import com.google.gson.Gson;
@@ -22,7 +23,8 @@ import java.util.Vector;
  *
  * @author DanNegrea
  */
-public class PersistSettings {    
+public class PersistSettings {
+    public static final String DEFAULT_LINE = "[[false,\"csrf\",false,false,true,false,false,\"\",\"grp[1]\",\"csrf\\u003d([a-zA-Z0-9]*)\",\"*\"]]";
     private EvictingQueue<String> evalQueue;
     private EvictingQueue<String> regexQueue;
     
@@ -42,6 +44,8 @@ public class PersistSettings {
         try{            
             Gson gson = new Gson();
             String jsonInString = gson.toJson(dataInTable);
+            //Save version fist (5 chars)
+            jsonInString = VERSION + jsonInString;
             callbacks.saveExtensionSetting("TokenJar.dataInTable", jsonInString);
             //Signal that old format up to TokenJar 2.0 is no longer in use
             callbacks.saveExtensionSetting("dataInTable", "");            
@@ -94,9 +98,12 @@ public class PersistSettings {
             {
                 String strObj = callbacks.loadExtensionSetting("TokenJar.dataInTable");                
                 
-                /*Demo line if empty*/
-                if (Strings.isNullOrEmpty(strObj)){
-                    strObj ="[[false,\"csrf\",false,false,true,false,false,\"\",\"grp[1]\",\"csrf\\u003d([a-zA-Z0-9]*)\",\"*\"]]";
+                if (!Strings.isNullOrEmpty(strObj) && strObj.length()>5){
+                    //TODO To be used in future version to check the settings format version number
+                    strObj = strObj.substring(5); //Skip version information (5 chars)
+                } else {
+                    /*Demo line if empty*/                
+                    strObj = DEFAULT_LINE;
                 }
                 
                 Gson gson = new Gson();
@@ -110,6 +117,10 @@ public class PersistSettings {
             } catch (Exception ex) {
                 PrintWriter stderr = new PrintWriter(callbacks.getStderr());
                 ex.printStackTrace(stderr);
+               
+                callbacks.printError("Failed to load settings. Restoring default line");
+                String jsonInString = VERSION + DEFAULT_LINE;
+                callbacks.saveExtensionSetting("TokenJar.dataInTable", jsonInString);
             }
         }        
         //second objective, attempt to restore the evalQueue and regexQueue
