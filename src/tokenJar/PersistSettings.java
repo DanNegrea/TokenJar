@@ -44,7 +44,7 @@ public class PersistSettings {
             String jsonInString = gson.toJson(dataInTable);
             callbacks.saveExtensionSetting("TokenJar.dataInTable", jsonInString);
             //Signal that old format up to TokenJar 2.0 is no longer in use
-            callbacks.saveExtensionSetting("dataInTable", "");
+            callbacks.saveExtensionSetting("dataInTable", "");            
         } catch (Exception ex) {
             PrintWriter stderr = new PrintWriter(callbacks.getStderr());
             ex.printStackTrace(stderr);
@@ -92,7 +92,13 @@ public class PersistSettings {
             //*DEBUG*/callbacks.printOutput("dataInTable.size()==0");
             try 
             {
-                String strObj = callbacks.loadExtensionSetting("TokenJar.dataInTable");
+                String strObj = callbacks.loadExtensionSetting("TokenJar.dataInTable");                
+                
+                /*Demo line if empty*/
+                if (Strings.isNullOrEmpty(strObj)){
+                    strObj ="[[false,\"csrf\",false,false,true,false,false,\"\",\"grp[1]\",\"csrf\\u003d([a-zA-Z0-9]*)\",\"*\"]]";
+                }
+                
                 Gson gson = new Gson();
                 restoredDataInTable = (Vector) gson.fromJson(strObj, Vector.class);
 
@@ -105,7 +111,7 @@ public class PersistSettings {
                 PrintWriter stderr = new PrintWriter(callbacks.getStderr());
                 ex.printStackTrace(stderr);
             }
-        }
+        }        
         //second objective, attempt to restore the evalQueue and regexQueue
         evalQueue = restore(evalQueue, "evalQueue");
         regexQueue = restore(regexQueue, "regexQueue");
