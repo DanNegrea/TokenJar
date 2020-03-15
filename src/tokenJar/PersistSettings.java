@@ -27,16 +27,19 @@ public class PersistSettings {
     public static final String DEFAULT_LINE = "[[false,\"csrf\",false,false,true,false,false,\"\",\"grp[1]\",\"csrf\\u003d([a-zA-Z0-9]*)\",\"*\"]]";
     private EvictingQueue<String> evalQueue;
     private EvictingQueue<String> regexQueue;
+    private int queueMaxSize;
     
     private final IBurpExtenderCallbacks callbacks;
     
     public PersistSettings(IBurpExtenderCallbacks callbacks){
             this(callbacks, 50);
+            queueMaxSize = 50;
     }
     
-    public PersistSettings(IBurpExtenderCallbacks callbacks, int expMaxSize){        
-        this.evalQueue = EvictingQueue.create(expMaxSize);        
-        this.regexQueue = EvictingQueue.create(expMaxSize);        
+    public PersistSettings(IBurpExtenderCallbacks callbacks, int expMaxSize){
+        this.queueMaxSize = expMaxSize;
+        this.evalQueue = EvictingQueue.create(queueMaxSize);        
+        this.regexQueue = EvictingQueue.create(queueMaxSize);        
         this.callbacks = callbacks;
     }
        
@@ -58,13 +61,11 @@ public class PersistSettings {
         save(regexQueue, "regexQueue");
     }
     private void save(EvictingQueue<String> queue, String queueName){
-        try (
-            ByteArrayOutputStream byteArrOut = new ByteArrayOutputStream();
-            ObjectOutputStream objectOut = new ObjectOutputStream(byteArrOut);
-        ){            
-            objectOut.writeObject(queue);
-            callbacks.saveExtensionSetting(queueName, byteArrOut.toString());
-        } catch (IOException ex) {
+        try{            
+            Gson gson = new Gson();
+            String jsonInString = gson.toJson(queue);            
+            callbacks.saveExtensionSetting("TokenJar."+queueName, jsonInString);          
+        } catch (Exception ex) {
             PrintWriter stderr = new PrintWriter(callbacks.getStderr());
             ex.printStackTrace(stderr);
         }
@@ -130,25 +131,30 @@ public class PersistSettings {
         return dataInTable;
     }
     
-    private EvictingQueue<String> restore(EvictingQueue<String> queue, String queueName){
-        String storedStr= callbacks.loadExtensionSetting(queueName);        
-        if (storedStr == null)  return queue;
-        
-        EvictingQueue<String> newQueue=null;
-        try (
-            ByteArrayInputStream byteArrIn = new ByteArrayInputStream(storedStr.getBytes());
-            ObjectInputStream objectIn = new ObjectInputStream(byteArrIn);
-        ){  
-            newQueue = (EvictingQueue<String>) objectIn.readObject();            
-        } 
-        catch (IOException | ClassNotFoundException ex) {
+    private EvictingQueue<String> restore(EvictingQueue<String> queue, String queueName){   
+        EvictingQueue<String> newQueue= EvictingQueue.create(queueMaxSize);
+        try{
+            String storedStr= callbacks.loadExtensionSetting("TokenJar."+queueName);            
+            if (Strings.isNullOrEmpty(storedStr))  return queue;
+
+            Gson gson = new Gson();
+            String[] storedQueue = gson.fromJson(storedStr, String[].class);
+            
+            for (int i=0; i<storedQueue.length; i++){
+                if( !Strings.isNullOrEmpty(storedQueue[i]) ){
+                    //if expression is contained, remove it and add it fresh
+                    if (newQueue.contains(storedQueue[i])) 
+                        newQueue.remove(storedQueue[i]);     
+                    newQueue.add(storedQueue[i]);            
+                }
+                //*DEBUG*/callbacks.printOutput("newQueue["+i+"]= "+ storedQueue[i]);
+            }
+        } catch (Exception ex) {
             PrintWriter stderr = new PrintWriter(callbacks.getStderr());
             ex.printStackTrace(stderr);
         }
-        finally{
-            if (newQueue==null) return queue; 
-            else return newQueue;
-        }     
+        if (newQueue.isEmpty()) return queue; 
+        else return newQueue;
     }   
     
     public void pushEval(String expression){
