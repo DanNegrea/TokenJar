@@ -46,10 +46,10 @@ public class PersistSettings {
     public void save(Vector dataInTable){
         try{            
             Gson gson = new Gson();
-            String jsonInString = gson.toJson(dataInTable);
+            String dataToStore = gson.toJson(dataInTable);
             //Save version fist (5 chars)
-            jsonInString = VERSION + jsonInString;
-            callbacks.saveExtensionSetting("TokenJar.dataInTable", jsonInString);
+            dataToStore = VERSION + dataToStore;
+            callbacks.saveExtensionSetting(NAME+".dataInTable", dataToStore);
             //Signal that old format up to TokenJar 2.0 is no longer in use
             callbacks.saveExtensionSetting("dataInTable", "");            
         } catch (Exception ex) {
@@ -63,8 +63,8 @@ public class PersistSettings {
     private void save(EvictingQueue<String> queue, String queueName){
         try{            
             Gson gson = new Gson();
-            String jsonInString = gson.toJson(queue);            
-            callbacks.saveExtensionSetting("TokenJar."+queueName, jsonInString);          
+            String dataToStore = gson.toJson(queue);            
+            callbacks.saveExtensionSetting(NAME+"."+queueName, dataToStore);          
         } catch (Exception ex) {
             PrintWriter stderr = new PrintWriter(callbacks.getStderr());
             ex.printStackTrace(stderr);
@@ -97,7 +97,7 @@ public class PersistSettings {
             //*DEBUG*/callbacks.printOutput("dataInTable.size()==0");
             try 
             {
-                String strObj = callbacks.loadExtensionSetting("TokenJar.dataInTable");                
+                String strObj = callbacks.loadExtensionSetting(NAME+".dataInTable");                
                 
                 if (!Strings.isNullOrEmpty(strObj) && strObj.length()>5){
                     //TODO To be used in future version to check the settings format version number
@@ -120,8 +120,8 @@ public class PersistSettings {
                 ex.printStackTrace(stderr);
                
                 callbacks.printError("Failed to load settings. Restoring default line");
-                String jsonInString = VERSION + DEFAULT_LINE;
-                callbacks.saveExtensionSetting("TokenJar.dataInTable", jsonInString);
+                String dataToStore = VERSION + DEFAULT_LINE;
+                callbacks.saveExtensionSetting(NAME+".dataInTable", dataToStore);
             }
         }        
         //second objective, attempt to restore the evalQueue and regexQueue
@@ -134,7 +134,7 @@ public class PersistSettings {
     private EvictingQueue<String> restore(EvictingQueue<String> queue, String queueName){   
         EvictingQueue<String> newQueue= EvictingQueue.create(queueMaxSize);
         try{
-            String storedStr= callbacks.loadExtensionSetting("TokenJar."+queueName);            
+            String storedStr= callbacks.loadExtensionSetting(NAME+"."+queueName);            
             if (Strings.isNullOrEmpty(storedStr))  return queue;
 
             Gson gson = new Gson();
