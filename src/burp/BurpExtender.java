@@ -11,6 +11,8 @@ import tokenJar.*;
 
 public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListener, IExtensionStateListener
 {
+    public static final String NAME="TokenJar";
+    public static final String VERSION=" 2.1 "; //always 5 chars
     private IBurpExtenderCallbacks callbacks;
     private IExtensionHelpers helpers;
     private Tab tab;
@@ -22,7 +24,7 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
         helpers = callbacks.getHelpers();
         
         // Set extension name
-        callbacks.setExtensionName("TokenJar 2.0");
+        callbacks.setExtensionName(NAME+" "+VERSION);
         
         tab = new Tab(callbacks);
         dataModel = tab.getDataModel();
@@ -105,7 +107,7 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
             callbacks.printOutput("<<< Processing Response Message");
             callbacks.printOutput(". Path=" + path);
             if (HTTP_message.getComment()==null)
-                HTTP_message.setComment("Tokenjar:");
+                HTTP_message.setComment(NAME+":");
         }
         
         String HTTP_response = null;
@@ -169,7 +171,7 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
                 callbacks.printOutput(">>> Processing Request Message");
                 callbacks.printOutput(". Path=" + requestInfo.getUrl().getPath());
                 if (HTTP_message.getComment()==null)
-                    HTTP_message.setComment("Tokenjar:");
+                    HTTP_message.setComment(NAME+":");
         }
         
         //1. Identify all params that are also in the table
