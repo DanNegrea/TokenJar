@@ -406,16 +406,14 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
         int dialogButton = JOptionPane.YES_NO_OPTION;
         int dialogResult = JOptionPane.showConfirmDialog(this, "Are you sure you want to remove the selected line(s)?", "Warning", dialogButton);
         if(dialogResult == 0) { /*0 > Yes   1 > No */  
-            // BUG: No success in fixing the freeze when deleting the last row of the table after a sort.
             SwingUtilities.invokeLater(new Runnable() {
                     public void run() {
                         try{
                             int[] selectedRows = tokenTable.getSelectedRows();
                             for (int i = 0; i < selectedRows.length; i++){
-                                int selectedRow = tokenTable.convertRowIndexToModel(selectedRows[i]);
-                                /*DEBUG*/callbacks.printOutput("selectedRow =  " + selectedRow );
-                                /*DEBUG*/callbacks.printOutput("selectedRow - i =  " + (selectedRow - i) );
-                                tableModel.removeRow(selectedRow - i);
+                                // -i adjusts the index, it counts for already deleted rows, the rest of the rows "move" up
+                                int selectedRow = tokenTable.convertRowIndexToModel(selectedRows[i]-i);
+                                tableModel.removeRow(selectedRow);
                             }
                         }catch(Exception ex){
                             PrintStream burpErr = new PrintStream(callbacks.getStderr());
