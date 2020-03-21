@@ -641,12 +641,13 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
         tableModel.setDataVector(dataInTable, columnsInTable);
         
         dataModel.init();
+        this.resizeColumns();
     }
     
     private void resizeColumns() {
         tokenTable.getColumnModel().getSelectionModel().setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
        
-        int tableWidth = this.getWidth() - 100;
+        int tableWidth = this.getWidth() - 120;
         float[] columnWidthPercentage = {0.03f, 0.09f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.1825f, 0.1825f, 0.1825f, 0.1825f};
         
         for (int i=0; i<tokenTable.getColumnModel().getColumnCount(); i++){
