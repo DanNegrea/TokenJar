@@ -139,7 +139,11 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
         
         /*New "empty" row do just init */
         if (type==TableModelEvent.INSERT || type == TableModelEvent.DELETE){
+            /* Reinit the table*/
+            /* Save settings in Burp storage*/
             dataModel.init();
+            Vector dataInTable = tableModel.getDataVector();
+            persistSettings.save(dataInTable);
             return;
         }        
         /*Value already updated in Datamodel*/
