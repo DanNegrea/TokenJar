@@ -68,6 +68,9 @@ public class PersistSettings {
             ex.printStackTrace(stderr);
         }
     }
+    public void saveLastConfigPath(String path){
+        callbacks.saveExtensionSetting(NAME+".lastConfigPath", path);          
+    }
  
     public Vector restore(){              
         Vector restoredDataInTable = null;
@@ -153,7 +156,11 @@ public class PersistSettings {
         }
         if (newQueue.isEmpty()) return queue; 
         else return newQueue;
-    }   
+    } 
+    
+    public String restoreLastConfigPath(){
+        return callbacks.loadExtensionSetting(NAME+".lastConfigPath");
+    }
     
     public void pushEval(String expression){
         if( !Strings.isNullOrEmpty(expression) ){
