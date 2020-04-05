@@ -4,11 +4,11 @@
   <head>
     <meta charset='utf-8'>
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="description" content="Tokenjar : Burp Suite extension. Useful for managing tokens like anti-CSRF, CSurf, Session values. Can be used to set params that require random numbers or params that are computed based on special forumla.">
+    <meta name="description" content="Tokenjar : Burp Suite extension. Useful for managing tokens like anti-CSRF, CSurf, special purpose values. Can be used to set params that require random numbers or parameters that are computed based on special formula.">
 
     <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
 
-    <title>Tokenjar v2.0</title>
+    <title>Tokenjar v2.1</title>
   </head>
 
   <body>
@@ -18,8 +18,8 @@
         <header class="inner">
           <a id="forkme_banner" href="https://github.com/DanNegrea/TokenJar">View on GitHub</a>
 
-          <h1 id="project_title">Tokenjar v2.0</h1>
-          <h2 id="project_tagline">Burp Suite extension. Useful for managing tokens like anti-CSRF, CSurf, Session values. Can be used to set params that require random numbers or params that are computed based on special forumla.</h2>            
+          <h1 id="project_title">Tokenjar v2.1</h1>
+          <h2 id="project_tagline">Burp Suite extension. Useful for managing tokens like anti-CSRF, CSurf, session values. Can be used to set params that require random numbers or params that are computed based on special forumla.</h2>            
         </header>
     </div>
 
@@ -32,12 +32,14 @@
 <p>If you’re using Burp Suite Free or Pro you have already noticed that sometimes maintaining a session can be a difficult task.
 This extension is the easiest way to manage tokens used for different purposes. Examples include: anti-CSRF, CSurf value, parameters that require a unique/random value and even Session values that are computed based on a formula.</p>
 
+<img src="https://raw.githubusercontent.com/DanNegrea/TokenJar/gh-pages/images/teaser.png" alt="TokenJar showing its powers">
+        
 <p>TokenJar was designed to overcome the limitations of build-in Cookie Jar. It proves very useful when working together with Session Handling Rules.</p>
 
 <h2>
 <a id="download-the-plugin" class="anchor" href="#download-the-plugin" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Download the plugin</h2>
 
-<p>The ready to use jar can be downloaded from <a href="https://github.com/DanNegrea/TokenJar/releases/download/2.0/TokenJar.jar">here</a></p>
+<p>The ready to use jar can be downloaded from <a href="https://github.com/DanNegrea/TokenJar/releases/download/2.1/TokenJar.jar">here</a></p>
 
 <p>Go ahead and improve this extension. You can browse through the code <a href="https://github.com/DanNegrea/TokenJar">here</a>.</p>
 
@@ -64,19 +66,22 @@ This extension is the easiest way to manage tokens used for different purposes. 
 
 <li>Change extracting settings:<br/>
 <b>Path</b>-  a URL that limits the location from where the token is extracted (reponse)<br/>
-<b>Regex</b>- expression that identifies the desired value. Must have at least one matching group.<br/>
+<small>Tip: Can be * for most cases</small><br/>
+<b>Regex</b>- expression that identifies the desired value. Should have at least one matching group.<br/>
+<small>Tip: Use a common value such as "200 OK" if you just want a token that, for example, is unique per each request</small><br/>
 <b>Eval</b>-  javascript code for transforming the value. grp[1], grp[2], ... return the matched group 1, 2, ... Here you can use javascript to concatenate, generate random values (Math.random()), do conversions, etc.<br/>
+<small>Tip: Here you can use string operations (ex. concatenation), common js functions (ex. Math.random()) or your own code</small><br/>
 </li>
 
 <li>Set an initial value:<br/>
-<b>Value</b> - an optional initial value for the first run<br/>
+<b>Value</b> - an optional initial value for the first run. This value will be overwritten on runtime<br/>
 </li>
 
 <li>Set parameter name and location:</b><br/>
 <b>Name</b>- token name as it appears in request<br/>
 <b>header, url, body, ...</b>- token position in request. Multiple choises are possible.<br/>
 <i>header</i> - a custom header contains the token. Token name is without colon ":" <br/>
-<i>url</i> - the URL query contains the token as  parameter <br/>
+<i>url</i> - the URL query contains the token as parameter <br/>
 <i>body</i> - the token is an usual POST parameter <br/>
 <i>cookie</i> - one of the cookies contains the token <br/>
 <i>other</i> - for tokens inside json, xml, xml attribute, multi-part attribute
@@ -91,10 +96,10 @@ This extension is the easiest way to manage tokens used for different purposes. 
 <a id="example" class="anchor" href="#example" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Example</h3>
 
 <ol>
-<li>I added a new line with the scope of extracting the <i>csrf</i> value from a javascript variable. 
+<li>I added a new line with the scope of extracting the <i>csrf</i> value from a javascript variable embedded in the html response. 
 <img src="https://raw.githubusercontent.com/DanNegrea/TokenJar/gh-pages/images/example1.png" alt="">
 </li>
-<li>I tested the Regex and the Eval. To do this I used a response snippet.
+<li>I tested the Regex and the Eval. To do this I used the response snippet that contained the assigment that I am searching for.
 <img src="https://raw.githubusercontent.com/DanNegrea/TokenJar/gh-pages/images/example2.png" alt="">
 </li>
 <li>Enable the line and the master switch 
@@ -124,8 +129,9 @@ By enabling debugging real time information can be consulted in the Output windo
 <ul>
 <li>Master enable will be unchecked when Burp restarts</li>
 <li>State should be preserved after restart, nevertheless, you can save and load the configuration later using the bottom-right bottoms</li>
-<li>All token locations (header, url, body, ..) can be enabled if not sure what to use and when this does not matter. <br/>
-It matters only when multiple parameters have the same name. By doing so the performance might be impacted.</li>
+<li>All token locations (header, url, body, ..) can be enabled if not sure what to use and when this does not matter. 
+It matters only when multiple parameters have the same name, but a different value. In this case create a new line for each token.
+<br/>By enabeling all the performance might be impacted.</li>
 </ul>
 
 <h2>
@@ -133,14 +139,23 @@ It matters only when multiple parameters have the same name. By doing so the per
 
 <ul>
 <li>Burp Suite Free or Pro</li>
-<li>JRE or JDK 1.8</li>
+<li>JRE or JDK 1.8+</li>
 </ul>
+
+Notice:
+<ul>
+<li>Tested with JDK 11 (End of Premier Support <a href="https://www.oracle.com/java/technologies/java-se-support-roadmap.html">September 2023</a>)</li>
+<li>JS Engine (NashornScriptEngine) is set to be deprecated (still available in <a href="https://docs.oracle.com/en/java/javase/13/docs/api/jdk.scripting.nashorn/jdk/nashorn/api/scripting/NashornScriptEngine.html">JRE 13</a>)</li>
+</ul>
+ 
+
 
 <h3>
 <a id="requirements-for-building" class="anchor" href="#requirements-for-building" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Requirements for building</h3>
 
 <ul>
-<li>Google Guava 25.1</li>
+<li>Google Guava 28.2</li>
+<li>Google Gson 2.8.6</li>
 </ul>
       </section>
     </div>
@@ -151,9 +166,7 @@ It matters only when multiple parameters have the same name. By doing so the per
         <p class="copyright">Tokenjar maintained by <a href="https://github.com/DanNegrea">DanNegrea</a></p>
         <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
       </footer>
-    </div>
-
-    
+    </div> 
 
   </body>
 </html>
