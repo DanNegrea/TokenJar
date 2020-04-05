@@ -65,12 +65,17 @@ This extension is the easiest way to manage tokens used for different purposes. 
 <li>Add a new line</li>
 
 <li>Change extracting settings:<br/>
-<b>Path</b>-  a URL that limits the location from where the token is extracted (reponse)<br/>
-<i>Tip: Can be * for most cases</i><br/>
-<b>Regex</b>- expression that identifies the desired value. Should have at least one matching group.<br/>
-<i>Tip: Use a common value such as "200 OK" if you just want a token that, for example, is unique per each request</i><br/>
-<b>Eval</b>-  javascript code for transforming the value. grp[1], grp[2], ... return the matched group 1, 2, ... Here you can use javascript to concatenate, generate random values (Math.random()), do conversions, etc.<br/>
-<i>Tip: Here you can use string operations (ex. concatenation), common js functions (ex. Math.random()) or your own code</i><br/>
+  <ul>
+    <li><b>Path</b> -  a URL that limits the location from where the token is extracted (reponse)<br/>
+        <i>Tip: Can be * for most cases</i>
+    </li>
+    <li><b>Regex</b> - expression that identifies the desired value. Should have at least one matching group.<br/>
+        <i>Tip: Use a common value such as "200 OK" if you just want a token that, for example, is unique per each request</i>
+    </li>
+    <li><b>Eval</b>-  javascript code for transforming the value. grp[1], grp[2], ... return the matched group 1, 2, ... Here you can use javascript to concatenate, generate random values (Math.random()), do conversions, etc.<br/>
+        <i>Tip: Here you can use string operations (ex. concatenation), common js functions (ex. Math.random()) or your own code</i>
+    </li>
+  </ul>
 </li>
 
 <li>Set an initial value:<br/>
@@ -78,13 +83,15 @@ This extension is the easiest way to manage tokens used for different purposes. 
 </li>
 
 <li>Set parameter name and location:</b><br/>
-<b>Name</b>- token name as it appears in request<br/>
-<b>header, url, body, ...</b>- token position in request. Multiple choises are possible.<br/>
-<i>header</i> - a custom header contains the token. Token name is without colon ":" <br/>
-<i>url</i> - the URL query contains the token as parameter <br/>
-<i>body</i> - the token is an usual POST parameter <br/>
-<i>cookie</i> - one of the cookies contains the token <br/>
-<i>other</i> - for tokens inside json, xml, xml attribute, multi-part attribute
+  <ul>
+     <li><b>Name</b>- token name as it appears in request </li>
+     <li><b>header, url, body, ...</b>- token position in request. Multiple choises are possible.</li>
+     <li><i>header</i> - a custom header contains the token. Token name is without colon ":" </li>
+     <li><i>url</i> - the URL query contains the token as parameter </li>
+     <li><i>body</i> - the token is an usual POST parameter </li>
+     <li><i>cookie</i> - one of the cookies contains the token </li>
+     <li><i>other</i> - for tokens inside json, xml, xml attribute, multi-part attribute </li>
+  </ul>
 </li>
 
 <li>Optionally test your regular expression by clicking "Regex".</li>
