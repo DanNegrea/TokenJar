@@ -19,7 +19,7 @@
           <a id="forkme_banner" href="https://github.com/DanNegrea/TokenJar">View on GitHub</a>
 
           <h1 id="project_title">Tokenjar v2.1</h1>
-          <h2 id="project_tagline">Burp Suite extension. Useful for managing tokens like anti-CSRF, CSurf, session values. Can be used to set params that require random numbers or params that are computed based on special forumla.</h2>            
+          <h2 id="project_tagline">Burp Suite extension. Useful for managing tokens like anti-CSRF, CSurf, special purpose values. Can be used to set params that require random numbers or params that are computed based on special formula.</h2>            
         </header>
     </div>
 
@@ -27,7 +27,7 @@
     <div id="main_content_wrap" class="outer">
       <section id="main_content" class="inner">
         <h2>
-<a id="welcome-to-tokenjar-page" class="anchor" href="#welcome-to-tokenjar-page" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Welcome to TokenJar Page.</h2>
+<a id="welcome-to-tokenjar-page" class="anchor" href="#welcome-to-tokenjar-page" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Welcome to TokenJar Page</h2>
 
 <p>If you’re using Burp Suite Free or Pro you have already noticed that sometimes maintaining a session can be a difficult task.
 This extension is the easiest way to manage tokens used for different purposes. Examples include: anti-CSRF, CSurf value, parameters that require a unique/random value and even Session values that are computed based on a formula.</p>
@@ -66,11 +66,11 @@ This extension is the easiest way to manage tokens used for different purposes. 
 
 <li>Change extracting settings:<br/>
 <b>Path</b>-  a URL that limits the location from where the token is extracted (reponse)<br/>
-<small>Tip: Can be * for most cases</small><br/>
+<i>Tip: Can be * for most cases</i><br/>
 <b>Regex</b>- expression that identifies the desired value. Should have at least one matching group.<br/>
-<small>Tip: Use a common value such as "200 OK" if you just want a token that, for example, is unique per each request</small><br/>
+<i>Tip: Use a common value such as "200 OK" if you just want a token that, for example, is unique per each request</i><br/>
 <b>Eval</b>-  javascript code for transforming the value. grp[1], grp[2], ... return the matched group 1, 2, ... Here you can use javascript to concatenate, generate random values (Math.random()), do conversions, etc.<br/>
-<small>Tip: Here you can use string operations (ex. concatenation), common js functions (ex. Math.random()) or your own code</small><br/>
+<i>Tip: Here you can use string operations (ex. concatenation), common js functions (ex. Math.random()) or your own code</i><br/>
 </li>
 
 <li>Set an initial value:<br/>
