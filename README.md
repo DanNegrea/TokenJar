@@ -7,7 +7,7 @@ Please report issues using [GitHub Issues](https://github.com/DanNegrea/TokenJar
 
 ## Requirements for usage
 * Burp Suite Free or Pro
-* JRE or JDK 1.8
+* JRE or JDK 1.8+
  
 ### Notice
 * Tested with JDK 11 (End of Premier Support [September 2023](https://www.oracle.com/java/technologies/java-se-support-roadmap.html))
