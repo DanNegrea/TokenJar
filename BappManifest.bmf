@@ -3,7 +3,7 @@ ExtensionType: 1
 Name: TokenJar
 RepoName: token-jar
 ScreenVersion: 2.0a
-SerialVersion: 6
+SerialVersion: 7
 MinPlatformVersion: 0
 ProOnly: False
 Author: Dan Negrea @sec3ty
