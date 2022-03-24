@@ -10,7 +10,7 @@ import tokenJar.*;
 public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListener, IExtensionStateListener
 {
     public static final String NAME="TokenJar";
-    public static final String VERSION=" 2.1 "; //always 5 chars
+    public static final String VERSION=" 2.2 "; //always 5 chars
     private IBurpExtenderCallbacks callbacks;
     private IExtensionHelpers helpers;
     private Tab tab;
