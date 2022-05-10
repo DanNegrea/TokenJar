@@ -2,8 +2,8 @@ Uuid: d9e05bf81c8f4bae8a5b0b01955c5578
 ExtensionType: 1
 Name: TokenJar
 RepoName: token-jar
-ScreenVersion: 2.0a
-SerialVersion: 7
+ScreenVersion: 2.2
+SerialVersion: 8
 MinPlatformVersion: 0
 ProOnly: False
 Author: Dan Negrea @sec3ty

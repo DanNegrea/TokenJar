@@ -9,13 +9,14 @@ import burp.IBurpExtenderCallbacks;
 import java.io.PrintWriter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
+
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Highlighter;
 
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
 /**
  *
  * @author DanNegrea
@@ -24,7 +25,6 @@ public class RegexWindow extends javax.swing.JFrame {
 
     private final Tab parent;
     private int selectedRow;
-    private ScriptEngine JSengine;
     private PersistSettings persistSettings;
     
     private IBurpExtenderCallbacks callbacks;
@@ -74,10 +74,6 @@ public class RegexWindow extends javax.swing.JFrame {
                 regexField.addItem( (String) exprs[i]);
         }        
         regexField.setSelectedItem( regex );
-        
-        
-        ScriptEngineManager manager = new ScriptEngineManager();
-        JSengine = manager.getEngineByName("JavaScript");
     }
 
     /**
@@ -358,16 +354,29 @@ public class RegexWindow extends javax.swing.JFrame {
                 grpValues[i]= matcher.group(i);
                 debug.append("grp["+i+"]=").append(grpValues[i]).append("\n");
             }
+            
+            Context cx = Context.enter();
             try {                
-                JSengine.put("grp", grpValues);
-                String value = JSengine.eval( evalJS ).toString(); //compute the value by evaluating JavaScript
+                Scriptable scope = cx.initStandardObjects();
+            
+                //inject in JavaScript context the captured groups
+                Object jsGrpValues = Context.javaToJS(grpValues, scope);
+                ScriptableObject.putProperty(scope, "grp", jsGrpValues);
+                
+                //compute the value by evaluating JavaScript
+                Object result = cx.evaluateString(scope, evalJS, "<evalJS>", 1, null);
+                String value = Context.toString(result);
+                
+                
                 valueField.setText(value); //set the actual value
 
-            } catch (ScriptException ex) {
+            } catch (Exception ex) {
                 /*DEBUG*/debug.append("! Exception: ").append(ex.toString()).append("\n");
                 PrintWriter stderr = new PrintWriter(callbacks.getStderr());
                 ex.printStackTrace(stderr);
-            }
+            } finally {
+            Context.exit();
+            }  
             groupDebug.setText(debug.toString());
             /*end Eval the value*/ 
 

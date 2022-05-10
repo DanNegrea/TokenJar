@@ -15,11 +15,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 import javax.swing.table.DefaultTableModel;
 
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
 
 /**
  *
@@ -41,16 +41,12 @@ public class DataModel {
     private IBurpExtenderCallbacks callbacks;
     private final PrintWriter stderr;    
     
-    private final ScriptEngine JSengine;
     private boolean[] valueUpdated;
 
     public DataModel(DefaultTableModel tableModel, IBurpExtenderCallbacks callbacks){
         this.tableModel = tableModel;
         this.callbacks = callbacks;  
-        stderr = new PrintWriter(callbacks.getStderr());
-        
-        ScriptEngineManager manager = new ScriptEngineManager();
-        JSengine = manager.getEngineByName("JavaScript");
+        stderr = new PrintWriter(callbacks.getStderr());          
     }
    
     public void init() {
@@ -179,11 +175,19 @@ public class DataModel {
     }
     
     public void setValue(Integer rowId, String[] grpValues) {
+        Context cx = Context.enter();
         try {
             String evalJS = tableModel.getValueAt(rowId, 8).toString();
             
-            JSengine.put("grp", grpValues);            
-            String value = JSengine.eval( evalJS ).toString(); //compute the value by evaluating JavaScript
+            Scriptable scope = cx.initStandardObjects();
+            
+            //inject in JavaScript context the captured groups
+            Object jsGrpValues = Context.javaToJS(grpValues, scope);
+            ScriptableObject.putProperty(scope, "grp", jsGrpValues);
+
+            //compute the value by evaluating JavaScript
+            Object result = cx.evaluateString(scope, evalJS, "<evalJS>", 1, null);
+            String value = Context.toString(result);
                        
             this.valueUpdated[rowId]=true; //signal that the value was updated programatically
             tableModel.setValueAt(value, rowId, 7); //set the actual value
@@ -194,9 +198,11 @@ public class DataModel {
             for (byte type=0; type<=4; type++) // do this for each param type
                 if (isUpdatable(rowId, type))
                     tokensByType.get(type).put(paramName, rowId);            
-        } catch (ScriptException ex) {
+        } catch (Exception ex) {
             callbacks.printError(ex.getMessage());
-        }         
+        } finally {
+            Context.exit();
+        }        
     }
     
     /*The value was updated in the DataModel*/
