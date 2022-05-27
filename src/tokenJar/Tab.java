@@ -3,6 +3,11 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+
+/*
+    TODO(zeno): Figure out why tab doesn't show
+    TODO(zeno): Hook up options
+*/
 package tokenJar;
 
 import burp.IBurpExtenderCallbacks;
@@ -42,133 +47,134 @@ import javax.swing.Timer;
  *
  * @author DanNegrea
  */
-public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{    
-    private final DefaultTableModel tableModel;
-    private final DataModel dataModel;
-    final IBurpExtenderCallbacks callbacks;
-    private final PersistSettings persistSettings;
-    private Timer timerNewHere;
-    
-    /**
-     * Creates new form Panel
-     */
-    public Tab(IBurpExtenderCallbacks callbacks) {
-        initComponents();
-        
-        tokenTable.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
-        
-        //On window resize resize also the columns
-        this.addComponentListener(new ComponentAdapter() {
-            @Override
-            public void componentResized(ComponentEvent e) {
-                resizeColumns();
-            }
-        });
-        
-        this.callbacks = callbacks;
-        
-        persistSettings = new PersistSettings(callbacks, 50);
-        
-        tableModel = (DefaultTableModel) tokenTable.getModel();        
-        dataModel = new DataModel(tableModel, callbacks);
-       
-        //Restore table or put demo data
-        this.restoreTableData(persistSettings.restore()); 
-        this.resizeColumns();        
-        this.setStatusColor();
-        
-        //tokenTable.getColumnModel().removeColumn(null);  //in case I want to hide some columns
-        
-        //(re)Initialize dataModel
-        dataModel.init();
+public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
+	private final DefaultTableModel tableModel;
+	private final DataModel dataModel;
+	final IBurpExtenderCallbacks callbacks;
+	private final PersistSettings persistSettings;
+	private Timer timerNewHere;
 
-        //load Last Config Path from burp settings
-        this.lastPathConfig.setText(persistSettings.restoreLastConfigPath());
-        
-        tokenTable.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
-        
-        tableModel.addTableModelListener(this);
-        
-        /*Blink the 'New Here' meesage*/
-        timerNewHere = new Timer(1000, new BlinkLabel(jLabelNewHere));
-        if ( "true".equals(callbacks.loadExtensionSetting("NewHere:hide"))){
-            jLabelNewHere.setText("");
-        }
-        else{
-            timerNewHere.start();
-        }
-        
-    }
-    
-    public DataModel getDataModel() {
-        return dataModel;
-    }
-    public DefaultTableModel getTableModel(){
-        return tableModel;
-    }
-    
-    public PersistSettings getPersistSettings(){
-        return persistSettings;
-    }
-    
-    @Override
-    public String getTabCaption() {
-        return "Token Jar";
-    }
+	/**
+	 * Creates new form Panel
+	 */
+	public Tab(IBurpExtenderCallbacks callbacks) {
+		initComponents();
 
-    @Override
-    public Component getUiComponent() {
-        return this;
-    }
-  
-    @Override
-    public void tableChanged(TableModelEvent e) {
-        //*DEBUG*/callbacks.printOutput("TableChanged() e.getType="+e.getType()+"  getFirstRow=: "+e.getFirstRow()+" getLastRow="+e.getLastRow()+"");
-       
-        int type = e.getType(); 
-        int rowId = e.getFirstRow();
-        //int column = e.getColumn();
-        
-        //No line was updated or the table was dumpped
-        if (rowId<0)
-            return;
-        
-        /*New "empty" row do just init */
-        if (type==TableModelEvent.INSERT || type == TableModelEvent.DELETE){
-            /* Reinit the table*/
-            /* Save settings in Burp storage*/
-            dataModel.init();
-            Vector dataInTable = tableModel.getDataVector();
-            persistSettings.save(dataInTable);
-            return;
-        }        
-        /*Value already updated in Datamodel*/
-        if (dataModel.isValueUpdated(rowId))
-            return;
-        /*else => value provided by user*/
-         
-        Object enable = tableModel.getValueAt(rowId, 0);
-         
-        //If UPDATE and not valid row then uncheck 'Enable'
-        //w/o checking 'enable!=null && (boolean)enable' next time will run the function body again and again
-        if (enable!=null && (boolean)enable && type==TableModelEvent.UPDATE && !dataModel.checkRow(rowId, true)){
-            //*DEBUG*/callbacks.printOutput("row updated, but not valid");
-            tableModel.setValueAt(false, rowId, 0);
-            return;
-        }
-        
-        /* Reinit the table*/
-        /* Save settings in Burp storage*/
-        dataModel.init();
-        Vector dataInTable = tableModel.getDataVector();
-        persistSettings.save(dataInTable);
-    }
-    /*
-     * This method is called from within the constructor to initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is always
-     * regenerated by the Form Editor.
-     */
-    @SuppressWarnings("unchecked")
+		tokenTable.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
+
+		//On window resize resize also the columns
+		this.addComponentListener(new ComponentAdapter() {
+			@Override
+			public void componentResized(ComponentEvent e) {
+				resizeColumns();
+			}
+		});
+
+		this.callbacks = callbacks;
+
+		persistSettings = new PersistSettings(callbacks, 50);
+
+		tableModel = (DefaultTableModel) tokenTable.getModel();
+		dataModel = new DataModel(tableModel, callbacks);
+
+		//Restore table or put demo data
+		this.restoreTableData(persistSettings.restore());
+		this.resizeColumns();
+		this.setStatusColor();
+
+		//tokenTable.getColumnModel().removeColumn(null);  //in case I want to hide some columns
+
+		//(re)Initialize dataModel
+		dataModel.init();
+
+		//load Last Config Path from burp settings
+		this.lastPathConfig.setText(persistSettings.restoreLastConfigPath());
+
+		tokenTable.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
+
+		tableModel.addTableModelListener(this);
+
+		/*Blink the 'New Here' meesage*/
+		timerNewHere = new Timer(1000, new BlinkLabel(jLabelNewHere));
+		if ( "true".equals(callbacks.loadExtensionSetting("NewHere:hide"))){
+			jLabelNewHere.setText("");
+		}
+		else{
+			timerNewHere.start();
+		}
+                callbacks.addSuiteTab(this);
+
+	}
+
+	public DataModel getDataModel() {
+		return dataModel;
+	}
+	public DefaultTableModel getTableModel(){
+		return tableModel;
+	}
+
+	public PersistSettings getPersistSettings(){
+		return persistSettings;
+	}
+
+	@Override
+	public String getTabCaption() {
+		return "Token Jar";
+	}
+
+	@Override
+	public Component getUiComponent() {
+		return this;
+	}
+
+	@Override
+	public void tableChanged(TableModelEvent e) {
+		//*DEBUG*/callbacks.printOutput("TableChanged() e.getType="+e.getType()+"  getFirstRow=: "+e.getFirstRow()+" getLastRow="+e.getLastRow()+"");
+
+		int type = e.getType();
+		int rowId = e.getFirstRow();
+		//int column = e.getColumn();
+
+		//No line was updated or the table was dumpped
+		if (rowId<0)
+			return;
+
+		/*New "empty" row do just init */
+		if (type==TableModelEvent.INSERT || type == TableModelEvent.DELETE){
+			/* Reinit the table*/
+			/* Save settings in Burp storage*/
+			dataModel.init();
+			Vector dataInTable = tableModel.getDataVector();
+			persistSettings.save(dataInTable);
+			return;
+		}
+		/*Value already updated in Datamodel*/
+		if (dataModel.isValueUpdated(rowId))
+			return;
+		/*else => value provided by user*/
+
+		Object enable = tableModel.getValueAt(rowId, 0);
+
+		//If UPDATE and not valid row then uncheck 'Enable'
+		//w/o checking 'enable!=null && (boolean)enable' next time will run the function body again and again
+		if (enable!=null && (boolean)enable && type==TableModelEvent.UPDATE && !dataModel.checkRow(rowId, true)){
+			//*DEBUG*/callbacks.printOutput("row updated, but not valid");
+			tableModel.setValueAt(false, rowId, 0);
+			return;
+		}
+
+		/* Reinit the table*/
+		/* Save settings in Burp storage*/
+		dataModel.init();
+		Vector dataInTable = tableModel.getDataVector();
+		persistSettings.save(dataInTable);
+	}
+	/*
+	 * This method is called from within the constructor to initialize the form.
+	 * WARNING: Do NOT modify this code. The content of this method is always
+	 * regenerated by the Form Editor.
+	 */
+	@SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
@@ -197,11 +203,11 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
 
             },
             new String [] {
-                "Enable", "Name", "header", "url", "body", "cookie", "other", "Value", "Eval (js code)", "Regex", "Path"
+                "Enable", "Name", "header", "From url", "From body", "From cookie", "From other", "To Proxy", "To Repeater", "To Intruder", "Value", "Eval (js code)", "Regex", "Path"
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Boolean.class, java.lang.String.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class
+                java.lang.Boolean.class, java.lang.String.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class
             };
 
             public Class getColumnClass(int columnIndex) {
@@ -412,292 +418,292 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
         );
     }// </editor-fold>//GEN-END:initComponents
 
-    private void addTokenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addTokenActionPerformed
-        //tableModel.addRow(new Object[]{ enable, name, header, url, body, cookie, other, value, eval, regex, path });
-        tableModel.addRow(new Object[]{ false, "csrf", false, false, true, false, false, "", "grp[1]", "csrf=([a-zA-Z0-9]*)", "*" });
-    }//GEN-LAST:event_addTokenActionPerformed
+	private void addTokenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addTokenActionPerformed
+																		  //tableModel.addRow(new Object[]{ enable, name, header, url, body, cookie, other, value, eval, regex, path });
+		tableModel.addRow(new Object[]{ false, "csrf", false, false, true, false, false, "", "grp[1]", "csrf=([a-zA-Z0-9]*)", "*" });
+	}//GEN-LAST:event_addTokenActionPerformed
 
-    private void removeTokenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeTokenActionPerformed
-        int dialogButton = JOptionPane.YES_NO_OPTION;
-        int dialogResult = JOptionPane.showConfirmDialog(this, "Are you sure you want to remove the selected line(s)?", "Warning", dialogButton);
-        if(dialogResult == 0) { /*0 > Yes   1 > No */  
-            SwingUtilities.invokeLater(new Runnable() {
-                    public void run() {
-                        try{
-                            int[] selectedRows = tokenTable.getSelectedRows();
-                            for (int i = 0; i < selectedRows.length; i++){
-                                // -i adjusts the index, it counts for already deleted rows, the rest of the rows "move" up
-                                int selectedRow = tokenTable.convertRowIndexToModel(selectedRows[i]-i);
-                                tableModel.removeRow(selectedRow);
-                            }
-                        }catch(Exception ex){
-                            PrintStream burpErr = new PrintStream(callbacks.getStderr());
-                            ex.printStackTrace(burpErr);
-                        }
-                }
-            });
-        }
-    }//GEN-LAST:event_removeTokenActionPerformed
+	private void removeTokenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeTokenActionPerformed
+		int dialogButton = JOptionPane.YES_NO_OPTION;
+		int dialogResult = JOptionPane.showConfirmDialog(this, "Are you sure you want to remove the selected line(s)?", "Warning", dialogButton);
+		if(dialogResult == 0) { /*0 > Yes   1 > No */
+			SwingUtilities.invokeLater(new Runnable() {
+				public void run() {
+					try{
+						int[] selectedRows = tokenTable.getSelectedRows();
+						for (int i = 0; i < selectedRows.length; i++){
+							// -i adjusts the index, it counts for already deleted rows, the rest of the rows "move" up
+							int selectedRow = tokenTable.convertRowIndexToModel(selectedRows[i]-i);
+							tableModel.removeRow(selectedRow);
+						}
+					}catch(Exception ex){
+						PrintStream burpErr = new PrintStream(callbacks.getStderr());
+						ex.printStackTrace(burpErr);
+					}
+				}
+			});
+		}
+	}//GEN-LAST:event_removeTokenActionPerformed
 
-    private void openRegexWindowActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openRegexWindowActionPerformed
-        int selectedRow = tokenTable.getSelectedRow();                        
-        selectedRow = tokenTable.convertRowIndexToModel(selectedRow);
-        RegexWindow window = new RegexWindow(this, selectedRow, callbacks);                
-        window.setVisible(true);        
-    }//GEN-LAST:event_openRegexWindowActionPerformed
+	private void openRegexWindowActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openRegexWindowActionPerformed
+		int selectedRow = tokenTable.getSelectedRow();
+		selectedRow = tokenTable.convertRowIndexToModel(selectedRow);
+		RegexWindow window = new RegexWindow(this, selectedRow, callbacks);
+		window.setVisible(true);
+	}//GEN-LAST:event_openRegexWindowActionPerformed
 
-    Object getCell(int row, int column){
-        return tableModel.getValueAt(row, column);
-    }
-    boolean setCell(int row, int column, Object value){
-        if (value==null) return false;        
-        tableModel.setValueAt(value, row, column);
-        return true;
-    }
-    
-    private void masterEnableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_masterEnableActionPerformed
-        //*DEBUG*/callbacks.printOutput("masterEnable..() | "+dataModel.getMasterEnable());         
-        if(masterEnable.isSelected()){            
-            dataModel.setMasterEnable(true);
-        }else{
-            dataModel.setMasterEnable(false);
-        }
-        this.setStatusColor();   
-         //*DEBUG*/callbacks.printOutput("end masterEnable..() | "+dataModel.getMasterEnable());
-    }//GEN-LAST:event_masterEnableActionPerformed
+	Object getCell(int row, int column){
+		return tableModel.getValueAt(row, column);
+	}
+	boolean setCell(int row, int column, Object value){
+		if (value==null) return false;
+		tableModel.setValueAt(value, row, column);
+		return true;
+	}
 
-    private void masterDebugActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_masterDebugActionPerformed
-        dataModel.setMasterDebug(masterDebug.isSelected());        
-        this.setStatusColor();
-    }//GEN-LAST:event_masterDebugActionPerformed
-    
-    private void setStatusColor(){
-        if(masterEnable.isSelected()){
-            if(masterDebug.isSelected())
-                statusColor.setBackground(Color.yellow);
-            else
-                statusColor.setBackground(Color.green);
-        }else{
-            statusColor.setBackground(Color.red);
-        }    
-        
-    }
-    
-    private void exportConfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportConfActionPerformed
-        JFileChooser fileChooser = new JFileChooser();
-        //use the path from Last Config
-        //in case of invalid path, it fails safe silently
-        fileChooser.setSelectedFile(new File(this.lastPathConfig.getText()));
-        int result = fileChooser.showSaveDialog(this);
+	private void masterEnableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_masterEnableActionPerformed
+																			  //*DEBUG*/callbacks.printOutput("masterEnable..() | "+dataModel.getMasterEnable());
+		if(masterEnable.isSelected()){
+			dataModel.setMasterEnable(true);
+		}else{
+			dataModel.setMasterEnable(false);
+		}
+		this.setStatusColor();
+		//*DEBUG*/callbacks.printOutput("end masterEnable..() | "+dataModel.getMasterEnable());
+	}//GEN-LAST:event_masterEnableActionPerformed
 
-        switch (result) {
-        case JFileChooser.APPROVE_OPTION:
-            File file = fileChooser.getSelectedFile();            
-            try (
-                FileWriter fileOut = new FileWriter(file);
-            ){
-                Gson gson = new Gson();
-                Vector dataInTable = tableModel.getDataVector();
-                String dataToStore = gson.toJson(dataInTable);
-                dataToStore = NAME + VERSION + dataToStore;                
-                fileOut.write(dataToStore);
-                //set Last Config Path to the last loaded file
-                this.lastPathConfig.setText(file.getAbsolutePath());
-                //save Last Config Path in burp settings
-                persistSettings.saveLastConfigPath(file.getAbsolutePath());
-                
-            } catch (Exception ex) {
-                PrintWriter stderr = new PrintWriter(callbacks.getStderr());
-                ex.printStackTrace(stderr);
-            }
-            break;
-        case JFileChooser.CANCEL_OPTION:
-          break;
-        case JFileChooser.ERROR_OPTION:
-          callbacks.printError("Error export error");
-          break;
-        }
-    }//GEN-LAST:event_exportConfActionPerformed
+	private void masterDebugActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_masterDebugActionPerformed
+		dataModel.setMasterDebug(masterDebug.isSelected());
+		this.setStatusColor();
+	}//GEN-LAST:event_masterDebugActionPerformed
 
-    private void importConfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_importConfActionPerformed
-        JFileChooser fileChooser = new JFileChooser();
-        //use the path from Last Config
-        //in case of invalid path, it fails safe silently
-        fileChooser.setSelectedFile(new File(this.lastPathConfig.getText()));
-        int result = fileChooser.showOpenDialog(this);
-        switch (result) {
-        case JFileChooser.APPROVE_OPTION:
-            File file = fileChooser.getSelectedFile();
-            
-            //Magic Bytes
-            final byte mbSerializedObj[] = {(byte)0xAC, (byte)0xED, (byte)0x00, (byte)0x05};
-            byte mbFile[] = new byte[8];
-            
-            try (                
-                RandomAccessFile fileIn = new RandomAccessFile(file,"r");
-            ){  
-                //Read magic bytes
-                fileIn.read(mbFile, 0 , NAME.length());
-                
-                /*Attempt to restore data from version TokenJar 2.0*/
-                if (Bytes.indexOf(mbFile, mbSerializedObj)==0){
-                    fileIn.seek(0);                    
-                    try (
-                        InputStream is = Channels.newInputStream(fileIn.getChannel());
-                        ObjectInputStream objectIn = new ObjectInputStream(is); 
-                    ){
-                        Vector dataInTable = (Vector) objectIn.readObject();
-                        restoreTableData(dataInTable);
-                        persistSettings.save(dataInTable);
-                        //set Last Config Path to the last loaded file
-                        this.lastPathConfig.setText(file.getAbsolutePath());
-                        //save Last Config Path in burp settings
-                        persistSettings.saveLastConfigPath(file.getAbsolutePath());
-                    } catch (IOException | ClassNotFoundException ex) {
-                        callbacks.printOutput("! Error loading settings when opening the file of type serialized object");
-                        PrintWriter stderr = new PrintWriter(callbacks.getStderr());
-                        ex.printStackTrace(stderr);
-                    }
-                /*Attempt to restore data from newer version*/
-                } else 
-                    if (Bytes.indexOf(mbFile, NAME.getBytes())==0){                        
-                        try 
-                        {   
-                            //TODO Magic Bytes to be used in future version to check the settings format version number
-                            
-                            //Skip Magic Bytes and Version
-                            int fileStart = NAME.length()+VERSION.length();
-                            int fileLen = (int) fileIn.length()-NAME.length()-VERSION.length();                            
-                            
-                            byte[] fileContent = new byte[fileLen];
-                            
-                            fileIn.seek(fileStart);
-                            fileIn.read(fileContent, 0, fileLen); // wrong results with fileStart as offset 
+	private void setStatusColor(){
+		if(masterEnable.isSelected()){
+			if(masterDebug.isSelected())
+				statusColor.setBackground(Color.yellow);
+			else
+				statusColor.setBackground(Color.green);
+		}else{
+			statusColor.setBackground(Color.red);
+		}
 
-                            InputStreamReader is = new InputStreamReader(new ByteArrayInputStream(fileContent));
-                            Gson gson = new Gson();                            
-                            Vector restoredDataInTable = (Vector) gson.fromJson(is, Vector.class);
+	}
 
-                            //The respored data is a Vector of ArrayLists, the result should be a Vector of Vectors.
-                            Vector dataInTable = new Vector();
-                            for (int i=0; i<restoredDataInTable.size(); i++){
-                                Vector row = new Vector( (ArrayList) restoredDataInTable.elementAt(i));
-                                dataInTable.add(row);
-                            }
-                            restoreTableData(dataInTable);
-                            persistSettings.save(dataInTable);
-                            //set Last Config Path to the last loaded file
-                            this.lastPathConfig.setText(file.getAbsolutePath());
-                            //save Last Config Path in burp settings
-                            persistSettings.saveLastConfigPath(file.getAbsolutePath());
-                            
-                        } catch (Exception ex) {
-                            callbacks.printOutput("! Error loading settings when opening the file of type json");
-                            callbacks.printOutput(ex.toString());               
-                            PrintWriter stderr = new PrintWriter(callbacks.getStderr());
-                            ex.printStackTrace(stderr);                           
-                        }
-                    } else
-                        callbacks.printOutput("! Error - unknown format for the file");
-             
-            } catch (IOException ex) {
-                callbacks.printOutput("! Error when opening the file to restore");
-                PrintWriter stderr = new PrintWriter(callbacks.getStderr());
-                ex.printStackTrace(stderr);
-            }
-            break;
-        case JFileChooser.CANCEL_OPTION:
-          break;
-        case JFileChooser.ERROR_OPTION:
-          callbacks.printError("Error import error");
-          break;
-        }
-        //*DEBUG*/callbacks.printOutput("end.");
-    }//GEN-LAST:event_importConfActionPerformed
+	private void exportConfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportConfActionPerformed
+		JFileChooser fileChooser = new JFileChooser();
+		//use the path from Last Config
+		//in case of invalid path, it fails safe silently
+		fileChooser.setSelectedFile(new File(this.lastPathConfig.getText()));
+		int result = fileChooser.showSaveDialog(this);
 
-    private void goToSite1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_goToSite1MouseClicked
-        showGettingStartedDialog();
-    }//GEN-LAST:event_goToSite1MouseClicked
+		switch (result) {
+			case JFileChooser.APPROVE_OPTION:
+				File file = fileChooser.getSelectedFile();
+				try (
+						FileWriter fileOut = new FileWriter(file);
+					){
+					Gson gson = new Gson();
+					Vector dataInTable = tableModel.getDataVector();
+					String dataToStore = gson.toJson(dataInTable);
+					dataToStore = NAME + VERSION + dataToStore;
+					fileOut.write(dataToStore);
+					//set Last Config Path to the last loaded file
+					this.lastPathConfig.setText(file.getAbsolutePath());
+					//save Last Config Path in burp settings
+					persistSettings.saveLastConfigPath(file.getAbsolutePath());
 
-    private void masterProxyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_masterProxyActionPerformed
-        dataModel.setMasterProxy(masterProxy.isSelected());   
-    }//GEN-LAST:event_masterProxyActionPerformed
+				} catch (Exception ex) {
+					PrintWriter stderr = new PrintWriter(callbacks.getStderr());
+					ex.printStackTrace(stderr);
+				}
+				break;
+			case JFileChooser.CANCEL_OPTION:
+				break;
+			case JFileChooser.ERROR_OPTION:
+				callbacks.printError("Error export error");
+				break;
+		}
+	}//GEN-LAST:event_exportConfActionPerformed
 
-    private void masterIntruderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_masterIntruderActionPerformed
-        dataModel.setMasterIntruder(masterIntruder.isSelected());
-    }//GEN-LAST:event_masterIntruderActionPerformed
+	private void importConfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_importConfActionPerformed
+		JFileChooser fileChooser = new JFileChooser();
+		//use the path from Last Config
+		//in case of invalid path, it fails safe silently
+		fileChooser.setSelectedFile(new File(this.lastPathConfig.getText()));
+		int result = fileChooser.showOpenDialog(this);
+		switch (result) {
+			case JFileChooser.APPROVE_OPTION:
+				File file = fileChooser.getSelectedFile();
 
-    private void masterRepeaterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_masterRepeaterActionPerformed
-        dataModel.setMasterRepeater(masterRepeater.isSelected());
-    }//GEN-LAST:event_masterRepeaterActionPerformed
+				//Magic Bytes
+				final byte mbSerializedObj[] = {(byte)0xAC, (byte)0xED, (byte)0x00, (byte)0x05};
+				byte mbFile[] = new byte[8];
 
-    private void restoreTableData(Vector dataInTable) {
-        if (dataInTable==null) return;
-         
-         //Get the column names
-        Vector<String> columnsInTable = new Vector<>(tableModel.getColumnCount());
-        for (int i=0; i<tableModel.getColumnCount(); i++){
-            columnsInTable.add(tableModel.getColumnName(i));
-        }
-        
-        Vector invalidRows = new Vector(); // rows that don't have 11 elements 
+				try (
+						RandomAccessFile fileIn = new RandomAccessFile(file,"r");
+					){
+					//Read magic bytes
+					fileIn.read(mbFile, 0 , NAME.length());
 
-        for (int i=0; i<dataInTable.size(); i++){
-            //*DEBUG*/callbacks.printOutput("dataInTable["+i+"]="+dataInTable.elementAt(i));
-            Vector row = (Vector) dataInTable.elementAt(i);           
-            
-            if (row.size() == 11){ 
-                //Check if previous format (indicated by the "debug" as last field)
-                String debug = String.valueOf(row.elementAt(10));
-                if (debug.equals("true") || debug.equals("false")){
-                    //transform TokenJar v1 format to the v2 format
-                    for (int j=10; j>2; j--){  //move last 8 elements to the right
-                        row.setElementAt(row.elementAt(j-1), j);
-                    }
-                    row.setElementAt(false, 2); // "header" is set to false
-                    //*DEBUG*/callbacks.printOutput("restored dataInTable["+i+"]="+dataInTable.elementAt(i));
-                }
-            }
-            else {  // Does not correspond to any format
-                callbacks.printOutput("! Error when importing line"+row);
-                callbacks.printOutput("!  skipping this line");
-                invalidRows.add(row);
-            }
-        }
+					/*Attempt to restore data from version TokenJar 2.0*/
+					if (Bytes.indexOf(mbFile, mbSerializedObj)==0){
+						fileIn.seek(0);
+						try (
+								InputStream is = Channels.newInputStream(fileIn.getChannel());
+								ObjectInputStream objectIn = new ObjectInputStream(is);
+							){
+							Vector dataInTable = (Vector) objectIn.readObject();
+							restoreTableData(dataInTable);
+							persistSettings.save(dataInTable);
+							//set Last Config Path to the last loaded file
+							this.lastPathConfig.setText(file.getAbsolutePath());
+							//save Last Config Path in burp settings
+							persistSettings.saveLastConfigPath(file.getAbsolutePath());
+						} catch (IOException | ClassNotFoundException ex) {
+							callbacks.printOutput("! Error loading settings when opening the file of type serialized object");
+							PrintWriter stderr = new PrintWriter(callbacks.getStderr());
+							ex.printStackTrace(stderr);
+						}
+						/*Attempt to restore data from newer version*/
+					} else
+						if (Bytes.indexOf(mbFile, NAME.getBytes())==0){
+							try
+							{
+								//TODO Magic Bytes to be used in future version to check the settings format version number
 
-        
-        //restore the DataVector
-        if (invalidRows.size()>0){
-            dataInTable.removeAll(invalidRows);
-        }
-        tableModel.setDataVector(dataInTable, columnsInTable);
-        
-        dataModel.init();
-        this.resizeColumns();
-    }
-    
-    private void resizeColumns() {
-        tokenTable.getColumnModel().getSelectionModel().setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
-       
-        int tableWidth = this.getWidth() - 120;
-        float[] columnWidthPercentage = {0.03f, 0.09f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.1825f, 0.1825f, 0.1825f, 0.1825f};
-        
-        for (int i=0; i<tokenTable.getColumnModel().getColumnCount(); i++){
-            tokenTable.getColumnModel().getColumn(i).setPreferredWidth(Math.round(tableWidth * columnWidthPercentage[i]));
-        }
-            
-        //*DEBUG*/callbacks.printOutput("tokenTable.getWidth()  "+tokenTable.getWidth());
-    }
-    
-    
-    /*Display 'Getting Started' modal*/
-    private void showGettingStartedDialog(){
-        GettingStartedDialog gettingStartedDialog = new GettingStartedDialog(this, true);
-        gettingStartedDialog.setLocationRelativeTo(SwingUtilities.getWindowAncestor((Component) this));        
-        gettingStartedDialog.setVisible(true);
-    }
-    
-    
+								//Skip Magic Bytes and Version
+								int fileStart = NAME.length()+VERSION.length();
+								int fileLen = (int) fileIn.length()-NAME.length()-VERSION.length();
+
+								byte[] fileContent = new byte[fileLen];
+
+								fileIn.seek(fileStart);
+								fileIn.read(fileContent, 0, fileLen); // wrong results with fileStart as offset
+
+								InputStreamReader is = new InputStreamReader(new ByteArrayInputStream(fileContent));
+								Gson gson = new Gson();
+								Vector restoredDataInTable = (Vector) gson.fromJson(is, Vector.class);
+
+								//The respored data is a Vector of ArrayLists, the result should be a Vector of Vectors.
+								Vector dataInTable = new Vector();
+								for (int i=0; i<restoredDataInTable.size(); i++){
+									Vector row = new Vector( (ArrayList) restoredDataInTable.elementAt(i));
+									dataInTable.add(row);
+								}
+								restoreTableData(dataInTable);
+								persistSettings.save(dataInTable);
+								//set Last Config Path to the last loaded file
+								this.lastPathConfig.setText(file.getAbsolutePath());
+								//save Last Config Path in burp settings
+								persistSettings.saveLastConfigPath(file.getAbsolutePath());
+
+							} catch (Exception ex) {
+								callbacks.printOutput("! Error loading settings when opening the file of type json");
+								callbacks.printOutput(ex.toString());
+								PrintWriter stderr = new PrintWriter(callbacks.getStderr());
+								ex.printStackTrace(stderr);
+							}
+						} else
+							callbacks.printOutput("! Error - unknown format for the file");
+
+				} catch (IOException ex) {
+					callbacks.printOutput("! Error when opening the file to restore");
+					PrintWriter stderr = new PrintWriter(callbacks.getStderr());
+					ex.printStackTrace(stderr);
+				}
+				break;
+			case JFileChooser.CANCEL_OPTION:
+				break;
+			case JFileChooser.ERROR_OPTION:
+				callbacks.printError("Error import error");
+				break;
+		}
+		//*DEBUG*/callbacks.printOutput("end.");
+	}//GEN-LAST:event_importConfActionPerformed
+
+	private void goToSite1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_goToSite1MouseClicked
+		showGettingStartedDialog();
+	}//GEN-LAST:event_goToSite1MouseClicked
+
+	private void masterProxyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_masterProxyActionPerformed
+		dataModel.setMasterProxy(masterProxy.isSelected());
+	}//GEN-LAST:event_masterProxyActionPerformed
+
+	private void masterIntruderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_masterIntruderActionPerformed
+		dataModel.setMasterIntruder(masterIntruder.isSelected());
+	}//GEN-LAST:event_masterIntruderActionPerformed
+
+	private void masterRepeaterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_masterRepeaterActionPerformed
+		dataModel.setMasterRepeater(masterRepeater.isSelected());
+	}//GEN-LAST:event_masterRepeaterActionPerformed
+
+	private void restoreTableData(Vector dataInTable) {
+		if (dataInTable==null) return;
+
+		//Get the column names
+		Vector<String> columnsInTable = new Vector<>(tableModel.getColumnCount());
+		for (int i=0; i<tableModel.getColumnCount(); i++){
+			columnsInTable.add(tableModel.getColumnName(i));
+		}
+
+		Vector invalidRows = new Vector(); // rows that don't have 11 elements
+
+		for (int i=0; i<dataInTable.size(); i++){
+			//*DEBUG*/callbacks.printOutput("dataInTable["+i+"]="+dataInTable.elementAt(i));
+			Vector row = (Vector) dataInTable.elementAt(i);
+
+			if (row.size() == 11){
+				//Check if previous format (indicated by the "debug" as last field)
+				String debug = String.valueOf(row.elementAt(10));
+				if (debug.equals("true") || debug.equals("false")){
+					//transform TokenJar v1 format to the v2 format
+					for (int j=10; j>2; j--){  //move last 8 elements to the right
+						row.setElementAt(row.elementAt(j-1), j);
+					}
+					row.setElementAt(false, 2); // "header" is set to false
+												//*DEBUG*/callbacks.printOutput("restored dataInTable["+i+"]="+dataInTable.elementAt(i));
+				}
+			}
+			else {  // Does not correspond to any format
+				callbacks.printOutput("! Error when importing line"+row);
+				callbacks.printOutput("!  skipping this line");
+				invalidRows.add(row);
+			}
+		}
+
+
+		//restore the DataVector
+		if (invalidRows.size()>0){
+			dataInTable.removeAll(invalidRows);
+		}
+		tableModel.setDataVector(dataInTable, columnsInTable);
+
+		dataModel.init();
+		this.resizeColumns();
+	}
+
+	private void resizeColumns() {
+		tokenTable.getColumnModel().getSelectionModel().setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+
+		int tableWidth = this.getWidth() - 120;
+		float[] columnWidthPercentage = {0.03f, 0.09f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.1825f, 0.1825f, 0.1825f, 0.1825f};
+
+		for (int i=0; i<tokenTable.getColumnModel().getColumnCount(); i++){
+			tokenTable.getColumnModel().getColumn(i).setPreferredWidth(Math.round(tableWidth * columnWidthPercentage[i]));
+		}
+
+		//*DEBUG*/callbacks.printOutput("tokenTable.getWidth()  "+tokenTable.getWidth());
+	}
+
+
+	/*Display 'Getting Started' modal*/
+	private void showGettingStartedDialog(){
+		GettingStartedDialog gettingStartedDialog = new GettingStartedDialog(this, true);
+		gettingStartedDialog.setLocationRelativeTo(SwingUtilities.getWindowAncestor((Component) this));
+		gettingStartedDialog.setVisible(true);
+	}
+
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton addToken;
     private javax.swing.JButton exportConf;
@@ -719,31 +725,31 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
     private javax.swing.JTable tokenTable;
     // End of variables declaration//GEN-END:variables
 
-    public void eraseNewHereLabel(){
-        timerNewHere.stop();
-        this.jLabelNewHere.setText(""); 
-        callbacks.saveExtensionSetting("NewHere:hide", "true");
-    }
-    
-}
-class BlinkLabel implements ActionListener {  
-        private javax.swing.JLabel label;
-        private int count;
+	public void eraseNewHereLabel(){
+		timerNewHere.stop();
+		this.jLabelNewHere.setText("");
+		callbacks.saveExtensionSetting("NewHere:hide", "true");
+	}
 
-        public BlinkLabel(javax.swing.JLabel label){
-            this.label = label;
-        }
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            if(count % 2 == 0){
-                label.setOpaque(false);
-                label.setForeground(java.awt.Color.RED);
-            }
-            else{
-                label.setOpaque(true);
-                label.setForeground(java.awt.Color.MAGENTA);
-                label.setBackground(java.awt.Color.YELLOW);
-            }
-            count++;
-        }  
+}
+class BlinkLabel implements ActionListener {
+	private javax.swing.JLabel label;
+	private int count;
+
+	public BlinkLabel(javax.swing.JLabel label){
+		this.label = label;
+	}
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		if(count % 2 == 0){
+			label.setOpaque(false);
+			label.setForeground(java.awt.Color.RED);
+		}
+		else{
+			label.setOpaque(true);
+			label.setForeground(java.awt.Color.MAGENTA);
+			label.setBackground(java.awt.Color.YELLOW);
+		}
+		count++;
+	}
 }
