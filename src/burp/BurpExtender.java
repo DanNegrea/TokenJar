@@ -50,7 +50,7 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
 	// IProxyListener implementation
 	*/
 	@Override
-	public void processProxyMessage( boolean isRequest, IInterceptedProxyMessage message){
+	public void processProxyMessage(boolean isRequest, IInterceptedProxyMessage message){
 		//EXIT if Master Enable button is disabled
 		if (dataModel.getMasterEnable()==false)
 			return;
@@ -115,6 +115,10 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
 			Set<Integer> ids = dataModel.getByPath( path );
 
 			for(Integer id: ids){
+				if (!dataModel.getFromResponse(id)) {
+					callbacks.printOutput("Not getting from Response, skipping");
+					return;
+				}
 				//Get only the first time the response
 				if (HTTP_response==null) HTTP_response = new String(HTTP_message.getResponse());
 				String value = null;
@@ -180,15 +184,15 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
 		//2. Calculate Content-Length delta length
 		for (IParameter parameter : oParameters) {
 			// the parameter type must be between 0 and 4 (0-> header, 1->url, 2->body, 3->cookie, 4->other)
-			byte parameterType = parameter.getType();
+			byte parameterType = (byte) (parameter.getType() + 2); // NOTE(zeno): I add 2 here, because the header starts 2 positions later because I added 2 option before that
 			parameterType++; // increment with one to make room for header (0)
 
 			if (dataModel.getMasterDebug()) {callbacks.printOutput(". Parameter["+parameter.getName()+"]="+parameter.getValue()+" of Type="+enhancedParameter.Type.get(parameterType));} /*Debug enabled*/
 
-			if (parameterType>4)
-				parameterType = 4;
+			if (parameterType>9)
+				parameterType = 9;
 
-			if ( (id = dataModel.getByNameType(parameter.getName(), parameterType))!=null ) {
+			if ( (id = dataModel.getByNameType(parameter.getName(), parameterType)) !=null ) {
 				Boolean toProxy = dataModel.getToProxy(id);
 				Boolean toRepeater= dataModel.getToRepeater(id);
 				Boolean toIntruder = dataModel.getToIntruder(id);
@@ -201,7 +205,63 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
 				if (toolFlag == IBurpExtenderCallbacks.TOOL_INTRUDER && !toIntruder) {
 					return;
 				}
+
 				String newValue = dataModel.getValue(id);
+
+				if (dataModel.getFromRequest(id)) {
+					try{
+
+						//Obtaining path
+						String path = requestInfo.getUrl().getPath();
+
+						//Debug enabled
+						if (dataModel.getMasterDebug()){
+							callbacks.printOutput("");
+							callbacks.printOutput("Checking Request for values to be extracted, because 'Extract from Request' was enabled");
+							callbacks.printOutput(". Path=" + path);
+							if (HTTP_message.getComment()==null)
+								HTTP_message.setComment(NAME+":");
+						}
+
+						String HTTP_response = null;
+
+						//Get only the first time the response
+						if (HTTP_response==null) HTTP_response = new String(HTTP_message.getRequest());
+						String value = null;
+
+						Matcher matcher = dataModel.getPattern(id).matcher( HTTP_response );
+						int grpCount = matcher.groupCount()+1;
+
+						if (matcher.find()) { //do I need to test for && grpCount >=0 ?
+							/*Debug enabled*/
+							if (dataModel.getMasterDebug()) {
+								HTTP_message.setComment( HTTP_message.getComment() + " match:"+dataModel.getName(id));
+								callbacks.printOutput(". Match for "+dataModel.getName(id)+" (rule "+id+") for Regex=" + dataModel.getRegex(id));
+							}
+							String[] grpValues = new String[grpCount];
+
+							for (int i=0; i<grpCount; i++){
+								grpValues[i]= matcher.group(i);
+								/*Debug enabled*/
+								if (dataModel.getMasterDebug()){
+									callbacks.printOutput("+ grp["+i+"]="+ grpValues[i]);
+								}
+							}
+							callbacks.printOutput("Found value(s) for " + dataModel.getName(id) + " in Request. Storing it; Value(s) are: " + Arrays.toString(grpValues));
+							dataModel.setValue(id, grpValues);
+						}
+						else
+							/*Debug enabled*/
+							if (dataModel.getMasterDebug()){
+								callbacks.printOutput("< No match for "+dataModel.getName(id)+"("+id+") in Request, regex=" + dataModel.getRegex(id));
+							}
+					}catch (Exception ex){
+						callbacks.printOutput("! Exception while proccising the Request");
+						PrintStream burpErr = new PrintStream(callbacks.getStderr());
+						ex.printStackTrace(burpErr);
+						return;
+					}
+				}
 
 				nParameters.add(new enhancedParameter(parameter, newValue));
 				delta = newValue.length() - (parameter.getValueEnd() - parameter.getValueStart());

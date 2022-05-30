@@ -52,11 +52,11 @@ public class DataModel {
 	public void init() {
 		int rowIdCount = tableModel.getRowCount();
 
-		tokensByType = new ArrayList<>(8);              //each parameter type has its own HashMap
-		tokensByType.add(0,  new HashMap(rowIdCount));   //Extract from Request		->  -1+1
-		tokensByType.add(1,  new HashMap(rowIdCount));   //Extract from Reponse		->  0+1
-		tokensByType.add(2,  new HashMap(rowIdCount));   //header					->  1+1
-		tokensByType.add(3,  new HashMap(rowIdCount));   //url						->  2+1
+		tokensByType = new ArrayList<>(10);              //each parameter type has its own HashMap
+		tokensByType.add(0,  new HashMap(rowIdCount));   //Extract from Request		-> -1+1
+		tokensByType.add(1,  new HashMap(rowIdCount));   //Extract from Reponse		-> 0+1
+		tokensByType.add(2,  new HashMap(rowIdCount));   //header					-> 1+1
+		tokensByType.add(3,  new HashMap(rowIdCount));   //url						-> 2+1
 		tokensByType.add(4,  new HashMap(rowIdCount));   //body						-> 3+1
 		tokensByType.add(5,  new HashMap(rowIdCount));   //cookie					-> 4+1
 		tokensByType.add(6,  new HashMap(rowIdCount));   //other					-> 5+1
@@ -146,6 +146,14 @@ public class DataModel {
 		Set<Integer> byAllPath = tokensByPath.get("*");
 		byPath.addAll(byAllPath);
 		return byPath;
+	}
+
+	public boolean getFromRequest(int rowId) {
+		return (boolean)tableModel.getValueAt(rowId, 2);
+	}
+
+	public boolean getFromResponse(int rowId) {
+		return (boolean)tableModel.getValueAt(rowId, 3);
 	}
 
 	public boolean getToProxy(int rowId) {
@@ -270,12 +278,12 @@ public class DataModel {
 	}
 	public boolean isUpdatable(int rowId, byte type) {
 		//Attention: The order of parameter columns (checkboxes) in Table is important
-		if (type<4)
+		if (type<9)
 			return (boolean) tableModel.getValueAt(rowId, 2 + type ); // 2 is the position of 'header'
 																	  // header -> .getValueAt(_,2)
 																	  // ...
 																	  // cookie -> .getValueAt(_,5)
 		else
-			return (boolean) tableModel.getValueAt(rowId, 2 + 4 );    // other -> .getValueAt(_,6)
+			return (boolean) tableModel.getValueAt(rowId, 2 + 9 );    // other -> .getValueAt(_,6)
 	}
 }
