@@ -53,14 +53,16 @@ public class DataModel {
 		int rowIdCount = tableModel.getRowCount();
 
 		tokensByType = new ArrayList<>(8);              //each parameter type has its own HashMap
-		tokensByType.add(0, new HashMap(rowIdCount));   //header -> -1+1
-		tokensByType.add(1,  new HashMap(rowIdCount));   //url   ->  0+1
-		tokensByType.add(2,  new HashMap(rowIdCount));   //body  ->  1+1
-		tokensByType.add(3,  new HashMap(rowIdCount));   //cookie->  2+1
-		tokensByType.add(4,  new HashMap(rowIdCount));   //other  -> 3+1
-		tokensByType.add(5,  new HashMap(rowIdCount));   //other  -> 3+1
-		tokensByType.add(6,  new HashMap(rowIdCount));   //other  -> 3+1
-		tokensByType.add(7,  new HashMap(rowIdCount));   //other  -> 3+1
+		tokensByType.add(0,  new HashMap(rowIdCount));   //Extract from Request		->  -1+1
+		tokensByType.add(1,  new HashMap(rowIdCount));   //Extract from Reponse		->  0+1
+		tokensByType.add(2,  new HashMap(rowIdCount));   //header					->  1+1
+		tokensByType.add(3,  new HashMap(rowIdCount));   //url						->  2+1
+		tokensByType.add(4,  new HashMap(rowIdCount));   //body						-> 3+1
+		tokensByType.add(5,  new HashMap(rowIdCount));   //cookie					-> 4+1
+		tokensByType.add(6,  new HashMap(rowIdCount));   //other					-> 5+1
+		tokensByType.add(7,  new HashMap(rowIdCount));   //To Proxy					-> 6+1
+		tokensByType.add(8,  new HashMap(rowIdCount));   //To Repeater				-> 7+1
+		tokensByType.add(9,  new HashMap(rowIdCount));   //To Intruder				-> 8+1
 
 		tokensByPath = HashMultimap.create(rowIdCount, 3*rowIdCount);
 		patterns = new Pattern[rowIdCount];
@@ -73,13 +75,13 @@ public class DataModel {
 			Object enable = tableModel.getValueAt(rowId, 0);
 			Object name = tableModel.getValueAt(rowId, 1);
 			//Object eval = tableModel.getValueAt(rowId, 7); //not used
-			Object regex = tableModel.getValueAt(rowId, 12);
-			Object path = tableModel.getValueAt(rowId, 13);
+			Object regex = tableModel.getValueAt(rowId, 14);
+			Object path = tableModel.getValueAt(rowId, 15);
 
 
 			if( enable!=null && (boolean)enable && checkRow(rowId, false) ){
 				boolean updated = false;
-				for (byte type=0; type<=7; type++)
+				for (byte type=0; type<=9; type++)
 					if (isUpdatable(rowId, type)){
 						tokensByType.get(type).put(name.toString(), rowId);
 						//*DEBUG*/callbacks.printOutput("tokensByType.get("+type+").put("+tableModel.getValueAt(rowId, 1).toString()+","+ rowId+")");
@@ -112,18 +114,18 @@ public class DataModel {
 	 */
 	public boolean checkRow(int rowId, boolean repair){
 		Object name = tableModel.getValueAt(rowId, 1);
-		Object eval = tableModel.getValueAt(rowId, 11);
-		Object regex = tableModel.getValueAt(rowId, 12);
-		Object path = tableModel.getValueAt(rowId, 13);
+		Object eval = tableModel.getValueAt(rowId, 13);
+		Object regex = tableModel.getValueAt(rowId, 14);
+		Object path = tableModel.getValueAt(rowId, 15);
 		boolean repaired = false;
 
 		if (repair && eval== null || eval.toString().trim().equals("")){
-			tableModel.setValueAt("grp[1]", rowId, 11);
+			tableModel.setValueAt("grp[1]", rowId, 13);
 			repaired = true;
 		}
 
 		if (repair && path== null || path.toString().trim().equals("")){
-			tableModel.setValueAt("*", rowId, 13);
+			tableModel.setValueAt("*", rowId, 15);
 			repaired = true;
 		}
 
@@ -147,15 +149,15 @@ public class DataModel {
 	}
 
 	public boolean getToProxy(int rowId) {
-		return (boolean)tableModel.getValueAt(rowId, 7);
+		return (boolean)tableModel.getValueAt(rowId, 9);
 	}
 
 	public boolean getToRepeater(int rowId) {
-		return (boolean)tableModel.getValueAt(rowId, 8);
+		return (boolean)tableModel.getValueAt(rowId, 10);
 	}
 
 	public boolean getToIntruder(int rowId) {
-		return (boolean)tableModel.getValueAt(rowId, 9);
+		return (boolean)tableModel.getValueAt(rowId, 11);
 	}
 
 	public int getRowCount(){
@@ -174,15 +176,15 @@ public class DataModel {
 		//*DEBUG*/ callbacks.printOutput("getValue("+rowId+")");
 		//*DEBUG*/ callbacks.printOutput("="+tableModel.getValueAt(rowId, 6).toString());
 
-		return tableModel.getValueAt(rowId, 10).toString();
+		return tableModel.getValueAt(rowId, 12).toString();
 	}
 
 	public String getPath(int rowId) {
-		return tableModel.getValueAt(rowId, 13).toString();
+		return tableModel.getValueAt(rowId, 15).toString();
 	}
 
 	public String getRegex(int rowId) {
-		return tableModel.getValueAt(rowId, 12).toString();
+		return tableModel.getValueAt(rowId, 14).toString();
 	}
 
 	public Pattern getPattern(int rowId) {
@@ -192,7 +194,7 @@ public class DataModel {
 	public void setValue(Integer rowId, String[] grpValues) {
 		Context cx = Context.enter();
 		try {
-			String evalJS = tableModel.getValueAt(rowId, 11).toString();
+			String evalJS = tableModel.getValueAt(rowId, 13).toString();
 
 			Scriptable scope = cx.initStandardObjects();
 
@@ -205,12 +207,12 @@ public class DataModel {
 			String value = Context.toString(result);
 
 			this.valueUpdated[rowId]=true; //signal that the value was updated programatically
-			tableModel.setValueAt(value, rowId, 10); //set the actual value
+			tableModel.setValueAt(value, rowId, 12); //set the actual value
 
 			//the update was done for this parameter
 			String paramName = tableModel.getValueAt(rowId, 1).toString();
 			//mark that the latest value is to be obtained from this rowId id
-			for (byte type=0; type<=7; type++) // do this for each param type
+			for (byte type=0; type<=9; type++) // do this for each param type
 				if (isUpdatable(rowId, type))
 					tokensByType.get(type).put(paramName, rowId);
 		} catch (Exception ex) {
