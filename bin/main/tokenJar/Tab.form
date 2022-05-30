@@ -145,14 +145,17 @@
               <Properties>
                 <Property name="autoCreateRowSorter" type="boolean" value="true"/>
                 <Property name="model" type="javax.swing.table.TableModel" editor="org.netbeans.modules.form.editors2.TableModelEditor">
-                  <Table columnCount="11" rowCount="0">
+                  <Table columnCount="14" rowCount="0">
                     <Column editable="true" title="Enable" type="java.lang.Boolean"/>
                     <Column editable="true" title="Name" type="java.lang.String"/>
                     <Column editable="true" title="header" type="java.lang.Boolean"/>
-                    <Column editable="true" title="url" type="java.lang.Boolean"/>
-                    <Column editable="true" title="body" type="java.lang.Boolean"/>
-                    <Column editable="true" title="cookie" type="java.lang.Boolean"/>
-                    <Column editable="true" title="other" type="java.lang.Boolean"/>
+                    <Column editable="true" title="From url" type="java.lang.Boolean"/>
+                    <Column editable="true" title="From body" type="java.lang.Boolean"/>
+                    <Column editable="true" title="From cookie" type="java.lang.Boolean"/>
+                    <Column editable="true" title="From other" type="java.lang.Boolean"/>
+                    <Column editable="true" title="To Proxy" type="java.lang.Boolean"/>
+                    <Column editable="true" title="To Repeater" type="java.lang.Boolean"/>
+                    <Column editable="true" title="To Intruder" type="java.lang.Boolean"/>
                     <Column editable="true" title="Value" type="java.lang.String"/>
                     <Column editable="true" title="Eval (js code)" type="java.lang.String"/>
                     <Column editable="true" title="Regex" type="java.lang.String"/>
@@ -161,6 +164,21 @@
                 </Property>
                 <Property name="columnModel" type="javax.swing.table.TableColumnModel" editor="org.netbeans.modules.form.editors2.TableColumnModelEditor">
                   <TableColumnModel selectionModel="1">
+                    <Column maxWidth="-1" minWidth="-1" prefWidth="-1" resizable="true">
+                      <Title/>
+                      <Editor/>
+                      <Renderer/>
+                    </Column>
+                    <Column maxWidth="-1" minWidth="-1" prefWidth="-1" resizable="true">
+                      <Title/>
+                      <Editor/>
+                      <Renderer/>
+                    </Column>
+                    <Column maxWidth="-1" minWidth="-1" prefWidth="-1" resizable="true">
+                      <Title/>
+                      <Editor/>
+                      <Renderer/>
+                    </Column>
                     <Column maxWidth="-1" minWidth="-1" prefWidth="-1" resizable="true">
                       <Title/>
                       <Editor/>

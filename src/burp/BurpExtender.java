@@ -45,6 +45,7 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
 		;//dataModel is no longer accessible at this point
 	}
 
+
 	/*
 	// IProxyListener implementation
 	*/
@@ -58,7 +59,7 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
 
 		IHttpRequestResponse OLD_message = message.getMessageInfo();
 		if (isRequest) {
-			processRequestMessage(OLD_message);
+			processRequestMessage(IBurpExtenderCallbacks.TOOL_PROXY, OLD_message);
 		} else {
 			processResponseMessage(OLD_message);
 		}
@@ -83,7 +84,7 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
 			return;
 
 		if (isRequest){
-			processRequestMessage(message);
+			processRequestMessage(toolFlag, message);
 		} else {
 			processResponseMessage(message);
 		}
@@ -154,7 +155,7 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
 	/*
 	// Request message
 	*/
-	private void processRequestMessage(IHttpRequestResponse HTTP_message){
+	private void processRequestMessage(int toolFlag, IHttpRequestResponse HTTP_message){
 		IRequestInfo requestInfo = helpers.analyzeRequest(HTTP_message);
 		byte[] oRequest = HTTP_message.getRequest();
 		List<IParameter> oParameters = requestInfo.getParameters();
@@ -164,6 +165,7 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
 		int deltaRequest=0;
 		int deltaContentLen=0;
 		int delta; //work variable
+
 
 		//Debug enabled
 		if (dataModel.getMasterDebug()){
@@ -185,11 +187,20 @@ public class BurpExtender implements IBurpExtender, IHttpListener, IProxyListene
 
 			if (parameterType>4)
 				parameterType = 4;
-			if (parameter.getName() == "sid") {
-				callbacks.printOutput(dataModel.getByNameType(parameter.getName(), parameterType).toString());
-			}
 
 			if ( (id = dataModel.getByNameType(parameter.getName(), parameterType))!=null ) {
+				Boolean toProxy = dataModel.getToProxy(id);
+				Boolean toRepeater= dataModel.getToRepeater(id);
+				Boolean toIntruder = dataModel.getToIntruder(id);
+				if (toolFlag == IBurpExtenderCallbacks.TOOL_PROXY && !toProxy) {
+					return;
+				}
+				if (toolFlag == IBurpExtenderCallbacks.TOOL_REPEATER && !toRepeater) {
+					return;
+				}
+				if (toolFlag == IBurpExtenderCallbacks.TOOL_INTRUDER && !toIntruder) {
+					return;
+				}
 				String newValue = dataModel.getValue(id);
 
 				nParameters.add(new enhancedParameter(parameter, newValue));
