@@ -43,9 +43,9 @@ public class RegexWindow extends javax.swing.JFrame {
 		this.persistSettings = parent.getPersistSettings();
 
 		String name = parent.getCell(selectedRow, 1).toString();
-		String evalJS = parent.getCell(selectedRow, 11).toString();
-		Object regex = parent.getCell(selectedRow, 12);
-		String path = parent.getCell(selectedRow, 13).toString();
+		String evalJS = parent.getCell(selectedRow, 13).toString();
+		Object regex = parent.getCell(selectedRow, 14);
+		String path = parent.getCell(selectedRow, 15).toString();
 
 		//Indicate in UI the name of the parameter and the path
 		nameField.setText(name);
@@ -294,8 +294,8 @@ public class RegexWindow extends javax.swing.JFrame {
 		groupDebug.setText(groupDebug.getText() +"\n Saved");
 
 		//save Eval and Extract to parent window
-		parent.setCell(selectedRow, 8, (Object) evalField.getSelectedItem()); //evelCol
-		parent.setCell(selectedRow, 9, (Object) regexField.getSelectedItem()); //regexCol
+		parent.setCell(selectedRow, 13, (Object) evalField.getSelectedItem()); //evelCol
+		parent.setCell(selectedRow, 14, (Object) regexField.getSelectedItem()); //regexCol
 
 		//save Eval and Extract in persistant object
 		String evalJS = evalField.getSelectedItem().toString();
