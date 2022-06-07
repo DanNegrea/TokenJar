@@ -3,6 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+
 package tokenJar;
 
 import burp.IBurpExtenderCallbacks;
@@ -42,21 +43,21 @@ import javax.swing.Timer;
  *
  * @author DanNegrea
  */
-public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{    
+public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
     private final DefaultTableModel tableModel;
     private final DataModel dataModel;
     final IBurpExtenderCallbacks callbacks;
     private final PersistSettings persistSettings;
     private Timer timerNewHere;
-    
+
     /**
      * Creates new form Panel
      */
     public Tab(IBurpExtenderCallbacks callbacks) {
         initComponents();
-        
+
         tokenTable.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
-        
+
         //On window resize resize also the columns
         this.addComponentListener(new ComponentAdapter() {
             @Override
@@ -64,31 +65,31 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
                 resizeColumns();
             }
         });
-        
+
         this.callbacks = callbacks;
-        
+
         persistSettings = new PersistSettings(callbacks, 50);
-        
-        tableModel = (DefaultTableModel) tokenTable.getModel();        
+
+        tableModel = (DefaultTableModel) tokenTable.getModel();
         dataModel = new DataModel(tableModel, callbacks);
-       
+
         //Restore table or put demo data
-        this.restoreTableData(persistSettings.restore()); 
-        this.resizeColumns();        
+        this.restoreTableData(persistSettings.restore());
+        this.resizeColumns();
         this.setStatusColor();
-        
+
         //tokenTable.getColumnModel().removeColumn(null);  //in case I want to hide some columns
-        
+
         //(re)Initialize dataModel
         dataModel.init();
 
         //load Last Config Path from burp settings
         this.lastPathConfig.setText(persistSettings.restoreLastConfigPath());
-        
+
         tokenTable.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
-        
+
         tableModel.addTableModelListener(this);
-        
+
         /*Blink the 'New Here' meesage*/
         timerNewHere = new Timer(1000, new BlinkLabel(jLabelNewHere));
         if ( "true".equals(callbacks.loadExtensionSetting("NewHere:hide"))){
@@ -97,20 +98,21 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
         else{
             timerNewHere.start();
         }
-        
+        callbacks.addSuiteTab(this);
+
     }
-    
+
     public DataModel getDataModel() {
         return dataModel;
     }
     public DefaultTableModel getTableModel(){
         return tableModel;
     }
-    
+
     public PersistSettings getPersistSettings(){
         return persistSettings;
     }
-    
+
     @Override
     public String getTabCaption() {
         return "Token Jar";
@@ -120,19 +122,19 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
     public Component getUiComponent() {
         return this;
     }
-  
+
     @Override
     public void tableChanged(TableModelEvent e) {
         //*DEBUG*/callbacks.printOutput("TableChanged() e.getType="+e.getType()+"  getFirstRow=: "+e.getFirstRow()+" getLastRow="+e.getLastRow()+"");
-       
-        int type = e.getType(); 
+
+        int type = e.getType();
         int rowId = e.getFirstRow();
         //int column = e.getColumn();
-        
+
         //No line was updated or the table was dumpped
         if (rowId<0)
             return;
-        
+
         /*New "empty" row do just init */
         if (type==TableModelEvent.INSERT || type == TableModelEvent.DELETE){
             /* Reinit the table*/
@@ -141,14 +143,14 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
             Vector dataInTable = tableModel.getDataVector();
             persistSettings.save(dataInTable);
             return;
-        }        
+        }
         /*Value already updated in Datamodel*/
         if (dataModel.isValueUpdated(rowId))
             return;
         /*else => value provided by user*/
-         
+
         Object enable = tableModel.getValueAt(rowId, 0);
-         
+
         //If UPDATE and not valid row then uncheck 'Enable'
         //w/o checking 'enable!=null && (boolean)enable' next time will run the function body again and again
         if (enable!=null && (boolean)enable && type==TableModelEvent.UPDATE && !dataModel.checkRow(rowId, true)){
@@ -156,7 +158,7 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
             tableModel.setValueAt(false, rowId, 0);
             return;
         }
-        
+
         /* Reinit the table*/
         /* Save settings in Burp storage*/
         dataModel.init();
@@ -193,15 +195,15 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
 
         tokenTable.setAutoCreateRowSorter(true);
         tokenTable.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
+                    new Object [][] {
 
-            },
-            new String [] {
-                "Enable", "Name", "header", "url", "body", "cookie", "other", "Value", "Eval (js code)", "Regex", "Path"
-            }
-        ) {
+                    },
+                    new String [] {
+                        "Enable", "Name", "Extract from Request", "Extract from Response", "Apply to header", "Apply to url", "Apply to body", "Apply to cookie", "Apply to other", "To Proxy", "To Repeater", "To Intruder", "Value", "Eval (js code)", "Regex", "Path"
+                    }
+                    ) {
             Class[] types = new Class [] {
-                java.lang.Boolean.class, java.lang.String.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class
+                java.lang.Boolean.class, java.lang.String.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class
             };
 
             public Class getColumnClass(int columnIndex) {
@@ -248,7 +250,6 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
             }
         });
 
-        importConf.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/import-25px.png"))); // NOI18N
         importConf.setToolTipText("Import configuration");
         importConf.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -256,7 +257,6 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
             }
         });
 
-        exportConf.setIcon(new javax.swing.ImageIcon(getClass().getResource("/img/export-25px.png"))); // NOI18N
         exportConf.setToolTipText("Export configuration");
         exportConf.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -314,163 +314,163 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addComponent(masterEnable)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(statusColor, javax.swing.GroupLayout.DEFAULT_SIZE, 333, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(masterProxy)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(masterIntruder)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(masterRepeater)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(masterDebug)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jLabelNewHere, javax.swing.GroupLayout.PREFERRED_SIZE, 146, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(13, 13, 13))
-                    .addComponent(jScrollPane2))
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(jPanel2Layout.createSequentialGroup()
+                    .addContainerGap()
                     .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(jPanel2Layout.createSequentialGroup()
+                            .addComponent(masterEnable)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(statusColor, javax.swing.GroupLayout.DEFAULT_SIZE, 333, Short.MAX_VALUE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(masterProxy)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                            .addComponent(masterIntruder)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                            .addComponent(masterRepeater)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                            .addComponent(masterDebug)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                            .addComponent(jLabelNewHere, javax.swing.GroupLayout.PREFERRED_SIZE, 146, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGap(13, 13, 13))
+                        .addComponent(jScrollPane2))
+                    .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(importConf, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(21, 21, 21)
+                                .addComponent(exportConf, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(jPanel2Layout.createSequentialGroup()
+                                .addGap(18, 18, 18)
+                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(removeToken, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(addToken, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(openRegexWindow, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE))))
                         .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                             .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(importConf, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGap(21, 21, 21)
-                            .addComponent(exportConf, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGroup(jPanel2Layout.createSequentialGroup()
-                            .addGap(18, 18, 18)
-                            .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                .addComponent(removeToken, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(addToken, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(openRegexWindow, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(goToSite1, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(jLabel1)
-                                .addComponent(lastPathConfig, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)))))
-                .addContainerGap())
-        );
+                            .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(goToSite1, javax.swing.GroupLayout.Alignment.TRAILING)
+                                .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabel1)
+                                    .addComponent(lastPathConfig, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                    .addContainerGap())
+                    );
 
         jPanel2Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {addToken, openRegexWindow, removeToken});
 
         jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(masterEnable)
-                        .addComponent(statusColor, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(masterDebug)
-                        .addComponent(goToSite1)
-                        .addComponent(masterRepeater)
-                        .addComponent(masterIntruder)
-                        .addComponent(masterProxy)
-                        .addComponent(jLabelNewHere)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addComponent(addToken)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(removeToken)
-                        .addGap(49, 49, 49)
-                        .addComponent(openRegexWindow)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jLabel1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(lastPathConfig, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(exportConf, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(importConf, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 409, Short.MAX_VALUE))
-                .addContainerGap())
-        );
+                jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
+                    .addContainerGap()
+                    .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(masterEnable)
+                            .addComponent(statusColor, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(masterDebug)
+                            .addComponent(goToSite1)
+                            .addComponent(masterRepeater)
+                            .addComponent(masterIntruder)
+                            .addComponent(masterProxy)
+                            .addComponent(jLabelNewHere)))
+                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                    .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(jPanel2Layout.createSequentialGroup()
+                            .addComponent(addToken)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(removeToken)
+                            .addGap(49, 49, 49)
+                            .addComponent(openRegexWindow)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jLabel1)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(lastPathConfig, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(exportConf, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(importConf, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 409, Short.MAX_VALUE))
+                    .addContainerGap())
+                    );
 
         goToSite1.getAccessibleContext().setAccessibleDescription("");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 920, Short.MAX_VALUE)
-            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
+                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGap(0, 920, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                );
         layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 453, Short.MAX_VALUE)
-            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
+                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGap(0, 453, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                );
     }// </editor-fold>//GEN-END:initComponents
 
     private void addTokenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addTokenActionPerformed
-        //tableModel.addRow(new Object[]{ enable, name, header, url, body, cookie, other, value, eval, regex, path });
-        tableModel.addRow(new Object[]{ false, "csrf", false, false, true, false, false, "", "grp[1]", "csrf=([a-zA-Z0-9]*)", "*" });
+                                                                          //tableModel.addRow(new Object[]{ enable, name, header, extract from request, extract from response, url, body, cookie, other, To Proxy, To Repeater, To Intruder, value, eval, regex, path });
+        tableModel.addRow(new Object[]{ false, "csrf", false, true, false, false, true, false, false, false, false, false, "", "grp[1]", "csrf=([a-zA-Z0-9]*)", "*" });
     }//GEN-LAST:event_addTokenActionPerformed
 
     private void removeTokenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeTokenActionPerformed
         int dialogButton = JOptionPane.YES_NO_OPTION;
         int dialogResult = JOptionPane.showConfirmDialog(this, "Are you sure you want to remove the selected line(s)?", "Warning", dialogButton);
-        if(dialogResult == 0) { /*0 > Yes   1 > No */  
+        if(dialogResult == 0) { /*0 > Yes   1 > No */
             SwingUtilities.invokeLater(new Runnable() {
-                    public void run() {
-                        try{
-                            int[] selectedRows = tokenTable.getSelectedRows();
-                            for (int i = 0; i < selectedRows.length; i++){
-                                // -i adjusts the index, it counts for already deleted rows, the rest of the rows "move" up
-                                int selectedRow = tokenTable.convertRowIndexToModel(selectedRows[i]-i);
-                                tableModel.removeRow(selectedRow);
-                            }
-                        }catch(Exception ex){
-                            PrintStream burpErr = new PrintStream(callbacks.getStderr());
-                            ex.printStackTrace(burpErr);
+                public void run() {
+                    try{
+                        int[] selectedRows = tokenTable.getSelectedRows();
+                        for (int i = 0; i < selectedRows.length; i++){
+                            // -i adjusts the index, it counts for already deleted rows, the rest of the rows "move" up
+                            int selectedRow = tokenTable.convertRowIndexToModel(selectedRows[i]-i);
+                            tableModel.removeRow(selectedRow);
                         }
+                    }catch(Exception ex){
+                        PrintStream burpErr = new PrintStream(callbacks.getStderr());
+                        ex.printStackTrace(burpErr);
+                    }
                 }
             });
         }
     }//GEN-LAST:event_removeTokenActionPerformed
 
     private void openRegexWindowActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openRegexWindowActionPerformed
-        int selectedRow = tokenTable.getSelectedRow();                        
+        int selectedRow = tokenTable.getSelectedRow();
         selectedRow = tokenTable.convertRowIndexToModel(selectedRow);
-        RegexWindow window = new RegexWindow(this, selectedRow, callbacks);                
-        window.setVisible(true);        
+        RegexWindow window = new RegexWindow(this, selectedRow, callbacks);
+        window.setVisible(true);
     }//GEN-LAST:event_openRegexWindowActionPerformed
 
     Object getCell(int row, int column){
         return tableModel.getValueAt(row, column);
     }
     boolean setCell(int row, int column, Object value){
-        if (value==null) return false;        
+        if (value==null) return false;
         tableModel.setValueAt(value, row, column);
         return true;
     }
-    
+
     private void masterEnableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_masterEnableActionPerformed
-        //*DEBUG*/callbacks.printOutput("masterEnable..() | "+dataModel.getMasterEnable());         
-        if(masterEnable.isSelected()){            
+                                                                              //*DEBUG*/callbacks.printOutput("masterEnable..() | "+dataModel.getMasterEnable());
+        if(masterEnable.isSelected()){
             dataModel.setMasterEnable(true);
         }else{
             dataModel.setMasterEnable(false);
         }
-        this.setStatusColor();   
-         //*DEBUG*/callbacks.printOutput("end masterEnable..() | "+dataModel.getMasterEnable());
+        this.setStatusColor();
+        //*DEBUG*/callbacks.printOutput("end masterEnable..() | "+dataModel.getMasterEnable());
     }//GEN-LAST:event_masterEnableActionPerformed
 
     private void masterDebugActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_masterDebugActionPerformed
-        dataModel.setMasterDebug(masterDebug.isSelected());        
+        dataModel.setMasterDebug(masterDebug.isSelected());
         this.setStatusColor();
     }//GEN-LAST:event_masterDebugActionPerformed
-    
+
     private void setStatusColor(){
         if(masterEnable.isSelected()){
             if(masterDebug.isSelected())
@@ -479,10 +479,10 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
                 statusColor.setBackground(Color.green);
         }else{
             statusColor.setBackground(Color.red);
-        }    
-        
+        }
+
     }
-    
+
     private void exportConfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportConfActionPerformed
         JFileChooser fileChooser = new JFileChooser();
         //use the path from Last Config
@@ -491,31 +491,31 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
         int result = fileChooser.showSaveDialog(this);
 
         switch (result) {
-        case JFileChooser.APPROVE_OPTION:
-            File file = fileChooser.getSelectedFile();            
-            try (
-                FileWriter fileOut = new FileWriter(file);
-            ){
-                Gson gson = new Gson();
-                Vector dataInTable = tableModel.getDataVector();
-                String dataToStore = gson.toJson(dataInTable);
-                dataToStore = NAME + VERSION + dataToStore;                
-                fileOut.write(dataToStore);
-                //set Last Config Path to the last loaded file
-                this.lastPathConfig.setText(file.getAbsolutePath());
-                //save Last Config Path in burp settings
-                persistSettings.saveLastConfigPath(file.getAbsolutePath());
-                
-            } catch (Exception ex) {
-                PrintWriter stderr = new PrintWriter(callbacks.getStderr());
-                ex.printStackTrace(stderr);
-            }
-            break;
-        case JFileChooser.CANCEL_OPTION:
-          break;
-        case JFileChooser.ERROR_OPTION:
-          callbacks.printError("Error export error");
-          break;
+            case JFileChooser.APPROVE_OPTION:
+                File file = fileChooser.getSelectedFile();
+                try (
+                        FileWriter fileOut = new FileWriter(file);
+                    ){
+                    Gson gson = new Gson();
+                    Vector dataInTable = tableModel.getDataVector();
+                    String dataToStore = gson.toJson(dataInTable);
+                    dataToStore = NAME + VERSION + dataToStore;
+                    fileOut.write(dataToStore);
+                    //set Last Config Path to the last loaded file
+                    this.lastPathConfig.setText(file.getAbsolutePath());
+                    //save Last Config Path in burp settings
+                    persistSettings.saveLastConfigPath(file.getAbsolutePath());
+
+                } catch (Exception ex) {
+                    PrintWriter stderr = new PrintWriter(callbacks.getStderr());
+                    ex.printStackTrace(stderr);
+                }
+                break;
+            case JFileChooser.CANCEL_OPTION:
+                break;
+            case JFileChooser.ERROR_OPTION:
+                callbacks.printError("Error export error");
+                break;
         }
     }//GEN-LAST:event_exportConfActionPerformed
 
@@ -526,91 +526,91 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
         fileChooser.setSelectedFile(new File(this.lastPathConfig.getText()));
         int result = fileChooser.showOpenDialog(this);
         switch (result) {
-        case JFileChooser.APPROVE_OPTION:
-            File file = fileChooser.getSelectedFile();
-            
-            //Magic Bytes
-            final byte mbSerializedObj[] = {(byte)0xAC, (byte)0xED, (byte)0x00, (byte)0x05};
-            byte mbFile[] = new byte[8];
-            
-            try (                
-                RandomAccessFile fileIn = new RandomAccessFile(file,"r");
-            ){  
-                //Read magic bytes
-                fileIn.read(mbFile, 0 , NAME.length());
-                
-                /*Attempt to restore data from version TokenJar 2.0*/
-                if (Bytes.indexOf(mbFile, mbSerializedObj)==0){
-                    fileIn.seek(0);                    
-                    try (
-                        InputStream is = Channels.newInputStream(fileIn.getChannel());
-                        ObjectInputStream objectIn = new ObjectInputStream(is); 
+            case JFileChooser.APPROVE_OPTION:
+                File file = fileChooser.getSelectedFile();
+
+                //Magic Bytes
+                final byte mbSerializedObj[] = {(byte)0xAC, (byte)0xED, (byte)0x00, (byte)0x05};
+                byte mbFile[] = new byte[8];
+
+                try (
+                        RandomAccessFile fileIn = new RandomAccessFile(file,"r");
                     ){
-                        Vector dataInTable = (Vector) objectIn.readObject();
-                        restoreTableData(dataInTable);
-                        persistSettings.save(dataInTable);
-                        //set Last Config Path to the last loaded file
-                        this.lastPathConfig.setText(file.getAbsolutePath());
-                        //save Last Config Path in burp settings
-                        persistSettings.saveLastConfigPath(file.getAbsolutePath());
-                    } catch (IOException | ClassNotFoundException ex) {
-                        callbacks.printOutput("! Error loading settings when opening the file of type serialized object");
-                        PrintWriter stderr = new PrintWriter(callbacks.getStderr());
-                        ex.printStackTrace(stderr);
-                    }
-                /*Attempt to restore data from newer version*/
-                } else 
-                    if (Bytes.indexOf(mbFile, NAME.getBytes())==0){                        
-                        try 
-                        {   
-                            //TODO Magic Bytes to be used in future version to check the settings format version number
-                            
-                            //Skip Magic Bytes and Version
-                            int fileStart = NAME.length()+VERSION.length();
-                            int fileLen = (int) fileIn.length()-NAME.length()-VERSION.length();                            
-                            
-                            byte[] fileContent = new byte[fileLen];
-                            
-                            fileIn.seek(fileStart);
-                            fileIn.read(fileContent, 0, fileLen); // wrong results with fileStart as offset 
+                    //Read magic bytes
+                    fileIn.read(mbFile, 0 , NAME.length());
 
-                            InputStreamReader is = new InputStreamReader(new ByteArrayInputStream(fileContent));
-                            Gson gson = new Gson();                            
-                            Vector restoredDataInTable = (Vector) gson.fromJson(is, Vector.class);
-
-                            //The respored data is a Vector of ArrayLists, the result should be a Vector of Vectors.
-                            Vector dataInTable = new Vector();
-                            for (int i=0; i<restoredDataInTable.size(); i++){
-                                Vector row = new Vector( (ArrayList) restoredDataInTable.elementAt(i));
-                                dataInTable.add(row);
-                            }
+                    /*Attempt to restore data from version TokenJar 2.0*/
+                    if (Bytes.indexOf(mbFile, mbSerializedObj)==0){
+                        fileIn.seek(0);
+                        try (
+                                InputStream is = Channels.newInputStream(fileIn.getChannel());
+                                ObjectInputStream objectIn = new ObjectInputStream(is);
+                            ){
+                            Vector dataInTable = (Vector) objectIn.readObject();
                             restoreTableData(dataInTable);
                             persistSettings.save(dataInTable);
                             //set Last Config Path to the last loaded file
                             this.lastPathConfig.setText(file.getAbsolutePath());
                             //save Last Config Path in burp settings
                             persistSettings.saveLastConfigPath(file.getAbsolutePath());
-                            
-                        } catch (Exception ex) {
-                            callbacks.printOutput("! Error loading settings when opening the file of type json");
-                            callbacks.printOutput(ex.toString());               
+                        } catch (IOException | ClassNotFoundException ex) {
+                            callbacks.printOutput("! Error loading settings when opening the file of type serialized object");
                             PrintWriter stderr = new PrintWriter(callbacks.getStderr());
-                            ex.printStackTrace(stderr);                           
+                            ex.printStackTrace(stderr);
                         }
+                        /*Attempt to restore data from newer version*/
                     } else
-                        callbacks.printOutput("! Error - unknown format for the file");
-             
-            } catch (IOException ex) {
-                callbacks.printOutput("! Error when opening the file to restore");
-                PrintWriter stderr = new PrintWriter(callbacks.getStderr());
-                ex.printStackTrace(stderr);
-            }
-            break;
-        case JFileChooser.CANCEL_OPTION:
-          break;
-        case JFileChooser.ERROR_OPTION:
-          callbacks.printError("Error import error");
-          break;
+                        if (Bytes.indexOf(mbFile, NAME.getBytes())==0){
+                            try
+                            {
+                                //TODO Magic Bytes to be used in future version to check the settings format version number
+
+                                //Skip Magic Bytes and Version
+                                int fileStart = NAME.length()+VERSION.length();
+                                int fileLen = (int) fileIn.length()-NAME.length()-VERSION.length();
+
+                                byte[] fileContent = new byte[fileLen];
+
+                                fileIn.seek(fileStart);
+                                fileIn.read(fileContent, 0, fileLen); // wrong results with fileStart as offset
+
+                                InputStreamReader is = new InputStreamReader(new ByteArrayInputStream(fileContent));
+                                Gson gson = new Gson();
+                                Vector restoredDataInTable = (Vector) gson.fromJson(is, Vector.class);
+
+                                //The respored data is a Vector of ArrayLists, the result should be a Vector of Vectors.
+                                Vector dataInTable = new Vector();
+                                for (int i=0; i<restoredDataInTable.size(); i++){
+                                    Vector row = new Vector( (ArrayList) restoredDataInTable.elementAt(i));
+                                    dataInTable.add(row);
+                                }
+                                restoreTableData(dataInTable);
+                                persistSettings.save(dataInTable);
+                                //set Last Config Path to the last loaded file
+                                this.lastPathConfig.setText(file.getAbsolutePath());
+                                //save Last Config Path in burp settings
+                                persistSettings.saveLastConfigPath(file.getAbsolutePath());
+
+                            } catch (Exception ex) {
+                                callbacks.printOutput("! Error loading settings when opening the file of type json");
+                                callbacks.printOutput(ex.toString());
+                                PrintWriter stderr = new PrintWriter(callbacks.getStderr());
+                                ex.printStackTrace(stderr);
+                            }
+                        } else
+                            callbacks.printOutput("! Error - unknown format for the file");
+
+                } catch (IOException ex) {
+                    callbacks.printOutput("! Error when opening the file to restore");
+                    PrintWriter stderr = new PrintWriter(callbacks.getStderr());
+                    ex.printStackTrace(stderr);
+                }
+                break;
+            case JFileChooser.CANCEL_OPTION:
+                break;
+            case JFileChooser.ERROR_OPTION:
+                callbacks.printError("Error import error");
+                break;
         }
         //*DEBUG*/callbacks.printOutput("end.");
     }//GEN-LAST:event_importConfActionPerformed
@@ -620,7 +620,7 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
     }//GEN-LAST:event_goToSite1MouseClicked
 
     private void masterProxyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_masterProxyActionPerformed
-        dataModel.setMasterProxy(masterProxy.isSelected());   
+        dataModel.setMasterProxy(masterProxy.isSelected());
     }//GEN-LAST:event_masterProxyActionPerformed
 
     private void masterIntruderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_masterIntruderActionPerformed
@@ -633,29 +633,30 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
 
     private void restoreTableData(Vector dataInTable) {
         if (dataInTable==null) return;
-         
-         //Get the column names
+
+        //Get the column names
         Vector<String> columnsInTable = new Vector<>(tableModel.getColumnCount());
         for (int i=0; i<tableModel.getColumnCount(); i++){
             columnsInTable.add(tableModel.getColumnName(i));
         }
-        
-        Vector invalidRows = new Vector(); // rows that don't have 11 elements 
+
+        Vector invalidRows = new Vector(); // rows that don't have 11 elements
 
         for (int i=0; i<dataInTable.size(); i++){
             //*DEBUG*/callbacks.printOutput("dataInTable["+i+"]="+dataInTable.elementAt(i));
-            Vector row = (Vector) dataInTable.elementAt(i);           
-            
-            if (row.size() == 11){ 
+            Vector row = (Vector) dataInTable.elementAt(i);
+
+            if (row.size() == 16){ // NOTE(zeno): I think I have to set it to 16, because I added 5 extra options
+
                 //Check if previous format (indicated by the "debug" as last field)
-                String debug = String.valueOf(row.elementAt(10));
+                String debug = String.valueOf(row.elementAt(15));
                 if (debug.equals("true") || debug.equals("false")){
                     //transform TokenJar v1 format to the v2 format
-                    for (int j=10; j>2; j--){  //move last 8 elements to the right
+                    for (int j=15; j>2; j--){  //move last 8 elements to the right
                         row.setElementAt(row.elementAt(j-1), j);
                     }
                     row.setElementAt(false, 2); // "header" is set to false
-                    //*DEBUG*/callbacks.printOutput("restored dataInTable["+i+"]="+dataInTable.elementAt(i));
+                                                //*DEBUG*/callbacks.printOutput("restored dataInTable["+i+"]="+dataInTable.elementAt(i));
                 }
             }
             else {  // Does not correspond to any format
@@ -665,39 +666,39 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
             }
         }
 
-        
+
         //restore the DataVector
         if (invalidRows.size()>0){
             dataInTable.removeAll(invalidRows);
         }
         tableModel.setDataVector(dataInTable, columnsInTable);
-        
+
         dataModel.init();
         this.resizeColumns();
     }
-    
+
     private void resizeColumns() {
         tokenTable.getColumnModel().getSelectionModel().setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
-       
+
         int tableWidth = this.getWidth() - 120;
-        float[] columnWidthPercentage = {0.03f, 0.09f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.1825f, 0.1825f, 0.1825f, 0.1825f};
-        
+        float[] columnWidthPercentage = {0.03f, 0.09f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.16f, 0.16f, 0.16f, 0.16f};
+
         for (int i=0; i<tokenTable.getColumnModel().getColumnCount(); i++){
             tokenTable.getColumnModel().getColumn(i).setPreferredWidth(Math.round(tableWidth * columnWidthPercentage[i]));
         }
-            
+
         //*DEBUG*/callbacks.printOutput("tokenTable.getWidth()  "+tokenTable.getWidth());
     }
-    
-    
+
+
     /*Display 'Getting Started' modal*/
     private void showGettingStartedDialog(){
         GettingStartedDialog gettingStartedDialog = new GettingStartedDialog(this, true);
-        gettingStartedDialog.setLocationRelativeTo(SwingUtilities.getWindowAncestor((Component) this));        
+        gettingStartedDialog.setLocationRelativeTo(SwingUtilities.getWindowAncestor((Component) this));
         gettingStartedDialog.setVisible(true);
     }
-    
-    
+
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton addToken;
     private javax.swing.JButton exportConf;
@@ -721,29 +722,29 @@ public class Tab extends javax.swing.JPanel implements ITab, TableModelListener{
 
     public void eraseNewHereLabel(){
         timerNewHere.stop();
-        this.jLabelNewHere.setText(""); 
+        this.jLabelNewHere.setText("");
         callbacks.saveExtensionSetting("NewHere:hide", "true");
     }
-    
-}
-class BlinkLabel implements ActionListener {  
-        private javax.swing.JLabel label;
-        private int count;
 
-        public BlinkLabel(javax.swing.JLabel label){
-            this.label = label;
+}
+class BlinkLabel implements ActionListener {
+    private javax.swing.JLabel label;
+    private int count;
+
+    public BlinkLabel(javax.swing.JLabel label){
+        this.label = label;
+    }
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if(count % 2 == 0){
+            label.setOpaque(false);
+            label.setForeground(java.awt.Color.RED);
         }
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            if(count % 2 == 0){
-                label.setOpaque(false);
-                label.setForeground(java.awt.Color.RED);
-            }
-            else{
-                label.setOpaque(true);
-                label.setForeground(java.awt.Color.MAGENTA);
-                label.setBackground(java.awt.Color.YELLOW);
-            }
-            count++;
-        }  
+        else{
+            label.setOpaque(true);
+            label.setForeground(java.awt.Color.MAGENTA);
+            label.setBackground(java.awt.Color.YELLOW);
+        }
+        count++;
+    }
 }

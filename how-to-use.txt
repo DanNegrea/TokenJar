@@ -1,0 +1,28 @@
+# Top bar in TokenJar-Tab
+- Enable: Whether the extension is enabled
+- Colored bar:
+	- red: off
+	- green: on
+	- yellow: on, debug
+- Proxy: Grab values from Proxy
+- Intruder: Grab values from Intruder
+- Repeater: Grab values from Repeater
+- Debug: Enable debug-logging
+
+# Table row
+- Enable: Whether the rule is enabled
+- Name: Name of the thing that should be replaced/appended with the value
+- Apply header: Apply value in header
+- Apply url: Apply value in URL
+- Apply body: Apply value to Body
+- Apply cookie: Apply value to cookie
+- Apply other: Apply value to other
+- To Proxy: Apply value when using Proxy
+- To Repeater: Apply value when using Repeater
+- To Intruder: Apply value when using Intruder
+- Value: The captured/user-supplied value to place in requests
+- Eval:
+	- grp[] is a table containing all the matches
+	- can be used to mutate the value to be applied
+- Regex: The regex to use to find the value
+- Path: Path that is listened to
