@@ -1,5 +1,4 @@
 # Package Files #
-*.jar
 *.war
 *.ear
 
@@ -29,4 +28,3 @@ manifest.mf
 *.swp
 *.DS_Store
 *.lock
-.gradle/

@@ -3,11 +3,11 @@ ExtensionType: 1
 Name: TokenJar
 RepoName: token-jar
 ScreenVersion: 2.2
-SerialVersion: 8
+SerialVersion: 9
 MinPlatformVersion: 0
 ProOnly: False
 Author: Dan Negrea @sec3ty
 ShortDescription: Manages tokens and updates request parameters with current values.
-EntryPoint: build/libs/token-jar-all.jar
-BuildCommand: gradle -PburpJar=$BURP_JAR fatJar
+EntryPoint: build/libs/TokenJar-2.2.jar
+BuildCommand: ./gradlew build jar
 SupportedProducts: Pro, Community
