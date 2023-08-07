@@ -21,6 +21,12 @@ dependencies {
    implementation group: 'org.mozilla', name: 'rhino', version: '1.7.14'
 }
 
+
+java {
+    targetCompatibility = org.gradle.api.JavaVersion.VERSION_16
+    sourceCompatibility = org.gradle.api.JavaVersion.VERSION_16
+}
+
 sourceSets {
     main {
         java {
